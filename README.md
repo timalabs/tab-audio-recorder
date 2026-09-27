@@ -151,7 +151,7 @@ Recording Active (0ms of track beginning lost)
 ```
 
 * **Hands-Free Detection**: When **Auto-start recording** is toggled ON, the extension enters `WAITING_FOR_AUDIO` mode. It continuously monitors tab audio levels without recording silence.
-* **Live Audio Meter & Diagnostics**: Real-time decibel level (`Audio level: -18.4 dB` or `-∞ dB`) and an expandable **Diagnostics** panel showing stream state, track state, AudioContext state, 32-bit RMS energy, current dB, and threshold status.
+* **Live Audio Visualizer**: Real-time responsive visualizer providing instant visual confirmation as soon as tab audio is monitored or recorded.
 * **Transient Spike Rejection**: Sound must remain continuously above the volume threshold for at least 400 ms (configurable) to trigger recording. Short clicks, UI pops, and system chimes are discarded.
 * **3 dB Hysteresis**: Prevents candidate detection state flutter when audio fluctuates near the threshold.
 * **Pre-Roll Delay Buffer**: Built-in 700 ms (configurable) Web Audio delay buffer ensures the very first drum hit, guitar pluck, or vocal attack is preserved in the recording.

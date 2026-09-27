@@ -152,14 +152,6 @@ async function handleStartRecording(
   });
 
   const tracks = mediaStream.getAudioTracks();
-  console.log('[Offscreen] Captured tab MediaStream:', {
-    active: mediaStream.active,
-    audioTracksCount: tracks.length,
-    trackReadyState: tracks[0]?.readyState,
-    trackEnabled: tracks[0]?.enabled,
-    trackMuted: tracks[0]?.muted,
-  });
-
   if (!tracks.length) {
     throw new Error('No audio tracks captured from tab');
   }

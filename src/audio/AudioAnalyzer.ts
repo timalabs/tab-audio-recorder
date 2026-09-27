@@ -96,7 +96,6 @@ export class AudioAnalyzer {
     if (this.audioContext.state === 'suspended') {
       try {
         await this.audioContext.resume();
-        console.log('[AudioAnalyzer] AudioContext resumed, state:', this.audioContext.state);
       } catch (err) {
         console.warn('[AudioAnalyzer] Failed to resume AudioContext:', err);
       }
@@ -308,7 +307,6 @@ export class AudioAnalyzer {
         if (this.calibrationSamples.length > 0) {
           const sum = this.calibrationSamples.reduce((a, b) => a + b, 0);
           this.noiseFloorDb = Math.round(sum / this.calibrationSamples.length);
-          console.log('[AudioAnalyzer] Ambient noise floor calibrated:', this.noiseFloorDb, 'dB');
         }
       }
     }

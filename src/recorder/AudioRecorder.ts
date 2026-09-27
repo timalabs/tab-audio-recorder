@@ -45,22 +45,13 @@ export class AudioRecorder {
     this.selectedMime = getSupportedMimeType();
     this.settings = settings;
 
-    // Log complete MediaStream track diagnostics
     const tracks =
       stream && typeof stream.getAudioTracks === 'function'
         ? stream.getAudioTracks()
         : [];
-    console.log('[AudioRecorder] MediaStream initialized:', {
-      streamActive: Boolean(stream?.active),
-      audioTracksCount: tracks.length,
-      trackReadyState: tracks[0]?.readyState,
-      trackEnabled: tracks[0]?.enabled,
-      trackMuted: tracks[0]?.muted,
-    });
 
     tracks.forEach((track, idx) => {
       track.onmute = () => console.warn(`[AudioRecorder] Track ${idx} MUTED`);
-      track.onunmute = () => console.log(`[AudioRecorder] Track ${idx} UNMUTED`);
       track.onended = () => console.warn(`[AudioRecorder] Track ${idx} ENDED`);
     });
 
@@ -121,7 +112,6 @@ export class AudioRecorder {
         this.delayNode.connect(this.destinationNode);
 
         this.recordStream = this.destinationNode.stream;
-        console.log('[AudioRecorder] DelayNode pre-roll configured:', preRollSeconds, 'seconds');
       } catch (err) {
         console.warn('[AudioRecorder] Could not configure DelayNode pre-roll, falling back to direct stream:', err);
         this.recordStream = this.stream;

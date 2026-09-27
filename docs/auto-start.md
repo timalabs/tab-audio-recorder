@@ -57,7 +57,7 @@ To trigger recording, sound must remain continuously above the threshold for at 
 To prevent erratic state flutter when audio hovers near the threshold, a **3 dB hysteresis release margin** is applied. Once candidate detection starts at the trigger threshold (e.g. `-48 dB`), audio is allowed to dip down to `-51 dB` during musical decay without resetting the detection timer.
 
 ### 6. Ambient Baseline Calibration
-During the first 600 ms of monitoring, the detector measures the ambient noise floor of the tab. If audio is silent, the measured noise floor (e.g. `-78 dB`) is recorded and displayed in the diagnostics panel.
+During the first 600 ms of monitoring, the detector measures the ambient noise floor of the tab to establish a clean baseline.
 
 ---
 
@@ -84,29 +84,22 @@ When sustained audio is confirmed, the MediaRecorder starts recording the delaye
 
 ---
 
-## 4. Live Diagnostics & Debug Mode
+## 4. UI State Progression & Live Visualizer
 
-When Auto-start is enabled or active in `WAITING_FOR_AUDIO` / `AUDIO_DETECTED`, the popup displays a real-time **Audio level** meter alongside an expandable **Diagnostics** panel:
+When Auto-start is enabled, the user interface provides clean visual feedback without clutter:
 
 ```text
-Auto-start: ON
-Audio level: -18.4 dB (or -∞ dB when silent)
+[ Start Recording ]
+        ↓ (click)
+"Waiting for audio..." + Active Audio Visualizer
+        ↓ (sustained sound detected)
+"Audio detected"
+        ↓
+"🔴 Recording"
 ```
 
-### Diagnostic Grid Metrics
-| Metric | Description | Expected Value |
-| :--- | :--- | :--- |
-| **Capture** | MediaStream activity state | `OK` (stream active) |
-| **Audio tracks** | Track count, readyState, muted | `1 (live, unmuted)` |
-| **AudioContext** | Audio context lifecycle | `running` |
-| **Analyser** | Analyser node status | `active` (fftSize 2048) |
-| **RMS** | 32-bit floating-point energy | `0.00000` to `0.25000` |
-| **dB** | Decibels relative to full scale | `-100 dB` to `0 dB` |
-| **Threshold** | Configured trigger threshold | e.g. `-48 dB` |
-| **Above threshold** | Real-time threshold evaluation | `YES` / `NO` |
-| **Detection timer** | Elapsed candidate sound duration | `0 ms` to `400 ms` |
-| **Noise floor** | Measured baseline ambient floor | e.g. `-74 dB` |
-| **State** | Extension recorder state | `WAITING_FOR_AUDIO` |
+* **Live Audio Visualizer**: Provides instant visual confirmation as soon as tab audio is being monitored or recorded.
+* **Manual Override ("Record Now")**: If the user wants to start recording immediately without waiting for auto-detection, the "Record Now" button forces an immediate start.
 
 ---
 

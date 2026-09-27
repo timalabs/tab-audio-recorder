@@ -7,7 +7,6 @@ import { RecordingControls } from './components/RecordingControls.tsx';
 import { CompletedView } from './components/CompletedView.tsx';
 import { ErrorBanner } from './components/ErrorBanner.tsx';
 import { SmartRecordingSettings } from './components/SmartRecordingSettings.tsx';
-import { AutoStartDiagnostics } from './components/AutoStartDiagnostics.tsx';
 import { useRecorderState } from './hooks/useRecorderState.ts';
 import '../styles/popup.css';
 
@@ -17,8 +16,6 @@ export const App: React.FC = () => {
     currentTab,
     liveElapsedMs,
     audioLevel,
-    currentDb,
-    debugInfo,
     settings,
     updateSettings,
     startRecording,
@@ -76,12 +73,6 @@ export const App: React.FC = () => {
                 state.status === 'WAITING_FOR_AUDIO' ||
                 state.status === 'AUDIO_DETECTED'
               }
-            />
-            <AutoStartDiagnostics
-              currentDb={currentDb}
-              debugInfo={debugInfo}
-              status={state.status}
-              autoStartEnabled={settings.autoStartRecording}
             />
           </div>
 
