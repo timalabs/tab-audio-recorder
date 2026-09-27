@@ -1,11 +1,15 @@
+import { AudioFormat, DEFAULT_FORMAT } from '../audio/conversion/formats.ts';
+
 export interface RecorderSettings {
   trimSilence: boolean;
   expectedDurationMs?: number;
+  outputFormat: AudioFormat;
 }
 
 export const DEFAULT_SETTINGS: RecorderSettings = {
   trimSilence: true,
   expectedDurationMs: undefined,
+  outputFormat: DEFAULT_FORMAT,
 };
 
 const STORAGE_KEY = 'tab_audio_recorder_settings';

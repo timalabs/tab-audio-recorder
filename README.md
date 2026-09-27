@@ -16,15 +16,16 @@ All processing occurs 100% locally in your browser. **No audio is ever uploaded 
 
 ## Key Features
 
-- ✂️ **Smart Silence Trimming**: Automatically removes unwanted silence at the beginning and end of recordings without touching internal silence.
+- 🎵 **Local Audio Format Conversion**: Convert recordings client-side into **MP3** (192 kbps default), **WAV** (lossless PCM), **FLAC**, **OGG**, or native **WebM** without uploading to any server. See [docs/audio-conversion.md](docs/audio-conversion.md).
+- ✂️ **Smart Silence Trimming**: Automatically removes unwanted silence at the beginning and end of recordings without touching internal silence. See [docs/smart-trim.md](docs/smart-trim.md).
 - ⏱️ **Safe Track Duration Window**: Optional contextual signal helps preserve intentional dramatic pauses and breakdowns within tracks.
+- 🔄 **Multi-Format Export**: Export the same recording to multiple formats (e.g. MP3 and WAV) without re-recording.
 - 🔒 **Zero-Cloud Privacy**: Audio is processed exclusively in browser memory and saved to disk. No server, no backend, no telemetry, no tracking.
 - ⚡ **Persistent Background Recording**: Closing or reopening the popup window will **not** stop your recording.
 - 🔊 **Audible Pass-Through**: Capturing audio does not mute the tab—you can listen while recording.
 - 📊 **Live Audio Level Meter**: Lightweight dynamic multi-bar visualizer shows volume levels in real-time.
 - ⏱️ **Accurate Elapsed Timer**: Formats elapsed duration (`00:00` or `01:32:45`) synchronized with the background engine.
-- 🏷️ **Intelligent Safe Filenames**: Sanitizes page titles and generates clean filenames (e.g., `Podcast-Episode-2026-09-27-21-45-12.wav`).
-- 🎛️ **Dynamic MIME Negotiation**: Detects best browser-supported format (`WebM / Opus`, `WAV / PCM`, `OGG / Opus`, `MP4`).
+- 🏷️ **Intelligent Safe Filenames**: Sanitizes page titles and generates clean filenames (e.g., `Podcast-Episode-2026-09-27-21-45-12.mp3`).
 - 🎨 **Dark Premium Interface**: 360px wide, high-contrast, keyboard-accessible UI with local settings persistence.
 
 ---
@@ -86,7 +87,7 @@ Result:
 Download the latest pre-built packages from [**GitHub Releases**](https://github.com/timalabs/tab-audio-recorder/releases).
 
 ### For Google Chrome / Brave / Microsoft Edge:
-1. Download `tab-audio-recorder-chrome-v1.1.0.zip` from the latest release.
+1. Download `tab-audio-recorder-chrome-v1.2.0.zip` from the latest release.
 2. Unzip the file into a folder on your computer.
 3. Open `chrome://extensions/` in your browser.
 4. Enable **Developer mode** (toggle in the top-right corner).
@@ -94,7 +95,7 @@ Download the latest pre-built packages from [**GitHub Releases**](https://github
 6. Pin **Tab Audio Recorder** to your toolbar.
 
 ### For Mozilla Firefox:
-1. Download `tab-audio-recorder-firefox-v1.1.0.xpi` (or `.zip`).
+1. Download `tab-audio-recorder-firefox-v1.2.0.xpi` (or `.zip`).
 2. Open `about:debugging#/runtime/this-firefox` in Firefox.
 3. Click **Load Temporary Add-on...**.
 4. Select the downloaded `.xpi` (or `manifest.json` from the unzipped archive).

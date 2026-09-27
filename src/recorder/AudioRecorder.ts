@@ -118,7 +118,8 @@ export class AudioRecorder {
           });
 
           let finalBlob = rawBlob;
-          let durationMs = Math.max(0, this.stoppedAt - this.startedAt);
+          const rawDurationMs = Math.max(0, this.stoppedAt - this.startedAt);
+          let durationMs = rawDurationMs;
           let mimeTypeLabel = this.selectedMime.label;
           let fileExtension = this.selectedMime.extension;
           let isTrimmed = false;
@@ -155,6 +156,7 @@ export class AudioRecorder {
           const result: RecordingResult = {
             blobUrl: this.objectUrl,
             durationMs,
+            originalDurationMs: isTrimmed ? rawDurationMs : undefined,
             sizeBytes: finalBlob.size,
             mimeType: mimeTypeLabel,
             filename,

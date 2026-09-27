@@ -86,11 +86,6 @@ export const SmartRecordingSettings: React.FC<SmartRecordingSettingsProps> = ({
           <label htmlFor="track-duration-input" className="settings-label">
             Track duration
           </label>
-          <span className="settings-hint">
-            {isTrimmingOn
-              ? 'Optional — helps preserve silence inside track'
-              : 'Disabled (trimming is OFF)'}
-          </span>
         </div>
 
         <div className="duration-input-wrapper">
@@ -107,6 +102,15 @@ export const SmartRecordingSettings: React.FC<SmartRecordingSettingsProps> = ({
             aria-label="Expected track duration in MM:SS"
           />
         </div>
+      </div>
+
+      {/* Dynamic Explanation Annotation */}
+      <div className={`duration-annotation ${!isTrimmingOn ? 'annotation-disabled' : ''}`}>
+        {!isTrimmingOn
+          ? 'ⓘ Enable Trim silence to use track duration.'
+          : (settings.expectedDurationMs && settings.expectedDurationMs > 0)
+          ? 'ⓘ Silence within this duration will not be trimmed.'
+          : 'ⓘ Optional. Helps detect the end of the track.'}
       </div>
     </div>
   );

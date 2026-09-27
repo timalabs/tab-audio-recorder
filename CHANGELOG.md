@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-09-27
+
+### Added
+- **Client-Side Audio Format Conversion**:
+  - Export tab recordings to **MP3**, **WAV**, **FLAC**, **OGG**, and **WebM** directly in your browser.
+  - **MP3 (Default)**: Fast, non-blocking 192 kbps stereo encoding via `@breezystack/lamejs`.
+  - **WAV**: Instant, uncompressed 16-bit PCM RIFF export.
+  - **WebM**: Native browser container pass-through.
+  - **FLAC & OGG**: On-demand encoding with lazy-loaded FFmpeg WASM.
+  - **100% Client-Side & Private**: All conversion happens in browser memory; zero cloud uploads or third-party APIs.
+  - **Multi-Format Re-Export**: Generate multiple formats (e.g. MP3 and WAV) from the same recording without re-recording.
+  - **Format History Chips**: Visual badges (`✓ MP3`, `✓ WAV`) for instant re-downloading of already converted files.
+- **Non-Blocking Conversion UX**:
+  - Event-loop yielding ensures the popup never freezes during conversion.
+  - Smooth animated progress bar with real-time percentage (`Converting audio... MP3 78%`).
+  - Graceful cancellation support via `Cancel` button.
+- **Improved Smart Trim UX**:
+  - Dynamic explanatory annotations below the `Track duration` input:
+    - Trim ON + Duration set: `ⓘ Silence within this duration will not be trimmed.`
+    - Trim ON + Duration empty: `ⓘ Optional. Helps detect the end of the track.`
+    - Trim OFF: `ⓘ Enable Trim silence to use track duration.`
+  - Completed view displays Original Duration vs. Trimmed Duration with saved time badge.
+- **Format Preference Persistence**:
+  - Saves preferred output format in `chrome.storage.local` and `localStorage`.
+- **Comprehensive Documentation**:
+  - Added `docs/smart-trim.md` explaining trimming algorithms, RMS energy windows, and safe duration window.
+  - Added `docs/audio-conversion.md` detailing conversion architecture, lazy loading, and privacy guarantees.
+- **Expanded Test Suite**:
+  - 71 unit tests covering all trimming scenarios, format encoding, progress reporting, aborting, and error recovery.
+
+---
+
 ## [1.1.0] - 2026-09-27
 
 ### Added

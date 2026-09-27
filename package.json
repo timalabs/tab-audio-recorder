@@ -1,6 +1,6 @@
 {
   "name": "tab-audio-recorder",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Production-quality cross-browser extension to record audio from browser tabs privately and locally.",
   "type": "module",
   "scripts": {
@@ -33,6 +33,9 @@
   "author": "timalabs",
   "license": "MIT",
   "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "lucide-react": "^0.475.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

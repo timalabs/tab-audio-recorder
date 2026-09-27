@@ -50,6 +50,8 @@ export const App: React.FC = () => {
       ) : isCompleted ? (
         <CompletedView
           result={state.result}
+          settings={settings}
+          onUpdateSettings={updateSettings}
           onDownload={downloadRecording}
           onNewRecording={resetRecording}
         />

@@ -77,29 +77,34 @@ describe('Settings and Duration Input Parsing', () => {
       const settings = await loadSettings();
       expect(settings.trimSilence).toBe(true);
       expect(settings.expectedDurationMs).toBeUndefined();
+      expect(settings.outputFormat).toBe('mp3');
     });
 
     it('should save and reload custom settings', async () => {
       await saveSettings({
         trimSilence: false,
         expectedDurationMs: 180000,
+        outputFormat: 'wav',
       });
 
       const loaded = await loadSettings();
       expect(loaded.trimSilence).toBe(false);
       expect(loaded.expectedDurationMs).toBe(180000);
+      expect(loaded.outputFormat).toBe('wav');
     });
 
     it('should preserve existing settings on partial updates', async () => {
-      await saveSettings({ expectedDurationMs: 222000 });
+      await saveSettings({ expectedDurationMs: 222000, outputFormat: 'flac' });
       let loaded = await loadSettings();
       expect(loaded.trimSilence).toBe(true);
       expect(loaded.expectedDurationMs).toBe(222000);
+      expect(loaded.outputFormat).toBe('flac');
 
       await saveSettings({ trimSilence: false });
       loaded = await loadSettings();
       expect(loaded.trimSilence).toBe(false);
       expect(loaded.expectedDurationMs).toBe(222000);
+      expect(loaded.outputFormat).toBe('flac');
     });
   });
 });

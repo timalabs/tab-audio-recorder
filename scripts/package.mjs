@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { ZipArchive } = require('archiver');
+const archiver = require('archiver');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,7 +31,7 @@ function createZipArchive(sourceDir, outPath) {
     }
 
     const output = fs.createWriteStream(outPath);
-    const archive = new ZipArchive({
+    const archive = archiver('zip', {
       zlib: { level: 9 }, // Maximum compression
     });
 

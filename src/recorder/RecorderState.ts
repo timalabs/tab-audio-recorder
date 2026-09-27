@@ -21,6 +21,7 @@ export interface RecordingResult {
   downloadUrl?: string;
   dataUrl?: string;
   durationMs: number;
+  originalDurationMs?: number;
   sizeBytes: number;
   mimeType: string;
   filename: string;
