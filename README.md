@@ -1,84 +1,198 @@
-# Tab Audio Recorder
+# 🎙 Tab Audio Recorder
 
-> **Record audio from this browser tab — privately, locally, without a server.**
+Open-source browser extension for recording audio from your browser tabs.
+
+**Record → Trim → Convert → Download**
+
+Works with Chrome and Firefox.
+
+All processing happens locally in your browser.  
+No server. No account. No audio uploads.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/timalabs/tab-audio-recorder?color=blue)](https://github.com/timalabs/tab-audio-recorder/releases)
 [![Chrome MV3](https://img.shields.io/badge/Chrome-Manifest%20V3-blue)](dist/chrome)
 [![Firefox WebExtension](https://img.shields.io/badge/Firefox-WebExtension-orange)](dist/firefox)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](tsconfig.json)
-
-**Tab Audio Recorder** is a production-quality, open-source browser extension for **Google Chrome** and **Mozilla Firefox** that lets you capture audio from the active browser tab and save the recording directly to your computer.
-
-All processing occurs 100% locally in your browser. **No audio is ever uploaded to a server.**
+[![Tests Passing](https://img.shields.io/badge/Tests-71%2F71%20Passed-success)](tests)
 
 ---
 
-## Key Features
+> **Tab Audio Recorder** is an open-source browser extension for Chrome and Firefox that lets you record audio playing in a browser tab and save it locally.
+>
+> Recording, silence trimming, and audio conversion happen locally in the browser. No audio is uploaded to a server.
 
-- 🎵 **Local Audio Format Conversion**: Convert recordings client-side into **MP3** (192 kbps default), **WAV** (lossless PCM), **FLAC**, **OGG**, or native **WebM** without uploading to any server. See [docs/audio-conversion.md](docs/audio-conversion.md).
-- ✂️ **Smart Silence Trimming**: Automatically removes unwanted silence at the beginning and end of recordings without touching internal silence. See [docs/smart-trim.md](docs/smart-trim.md).
-- ⏱️ **Safe Track Duration Window**: Optional contextual signal helps preserve intentional dramatic pauses and breakdowns within tracks.
-- 🔄 **Multi-Format Export**: Export the same recording to multiple formats (e.g. MP3 and WAV) without re-recording.
-- 🔒 **Zero-Cloud Privacy**: Audio is processed exclusively in browser memory and saved to disk. No server, no backend, no telemetry, no tracking.
-- ⚡ **Persistent Background Recording**: Closing or reopening the popup window will **not** stop your recording.
-- 🔊 **Audible Pass-Through**: Capturing audio does not mute the tab—you can listen while recording.
-- 📊 **Live Audio Level Meter**: Lightweight dynamic multi-bar visualizer shows volume levels in real-time.
-- ⏱️ **Accurate Elapsed Timer**: Formats elapsed duration (`00:00` or `01:32:45`) synchronized with the background engine.
-- 🏷️ **Intelligent Safe Filenames**: Sanitizes page titles and generates clean filenames (e.g., `Podcast-Episode-2026-09-27-21-45-12.mp3`).
-- 🎨 **Dark Premium Interface**: 360px wide, high-contrast, keyboard-accessible UI with local settings persistence.
+The project is designed as a privacy-first, general-purpose browser audio recorder and local audio converter that works with websites containing HTML5 audio/video and web-based audio players.
 
 ---
 
-# Smart Silence Trimming
+## Features
 
-> Smart Silence Trimming automatically removes unwanted silence from the beginning and end of recordings while preserving intentional pauses inside the track.
+* 🎙 **Record audio from the active browser tab**: Capture any sound playing in your Chrome or Firefox tab with a single click.
+* 🌐 **Chrome and Firefox support**: Native Manifest V3 tab capture on Chrome and media stream capture on Firefox.
+* ✂️ **Smart leading/trailing silence trimming**: Automatically detect and slice unwanted silence before and after the track.
+* ⏱ **Optional track duration protection**: Safe window ensures internal silence inside the track is preserved.
+* 🎵 **Preserve intentional silence inside tracks**: Musical breakdowns, dramatic pauses, and speech pauses are never cut.
+* 🔄 **Convert recordings to MP3, WAV, FLAC, OGG, and WebM**: Universal in-browser format conversion with 192 kbps MP3 default.
+* 🔄 **Multi-format export**: Convert the same recording to multiple formats (e.g. MP3 first, then WAV) without re-recording.
+* 🔒 **Local-first privacy**: Your audio is processed directly on your machine without external network transfers.
+* 🚫 **No audio uploads**: Zero third-party cloud APIs, servers, or external dependencies.
+* ⚡ **No backend required**: Runs completely offline once installed in your browser.
+* 📦 **Open source**: Fully transparent, MIT-licensed TypeScript and React architecture.
+* 🛠 **Non-blocking asynchronous UI**: Chunked encoding yields to the browser event loop with a real-time progress bar.
 
-### Trim silence
+---
 
-* **ON (Default)**: When enabled, the extension analyzes the recording after it finishes and removes only:
-  * silence at the beginning
-  * silence at the end
-  
-  **It will NEVER remove silence from the middle of the track.**
-* **OFF**: When disabled, no silence trimming or audio processing is performed. The downloaded recording contains exactly the recorded audio from start to stop.
+## How It Works
 
-### Track duration
-
-Users can optionally specify the expected track duration (e.g., `00:45`, `01:30`, `03:42`, `05:00`).
-
-This helps the extension distinguish intentional silence inside a track from silence that occurs after the track has finished.
-
-> If a track is expected to be 3:42 long, silence occurring before that point is preserved because it may be part of the music. After the expected duration, sustained silence can be interpreted as the end of the track.
-
-> **Note**: Track duration is used as a detection hint, not as an exact cut-off time.
-
-The extension does **not** hard-cut the audio at the specified duration. The actual track may be slightly shorter or longer than the duration hint.
-
-### Examples
-
-#### Example 1: Trimming Enabled with Duration Hint
 ```text
-Trim silence: ON
-Track duration: 03:42
-
-Recording:
-[silence] [music] [intentional silence] [music] [silence]
-
-Result:
-[music] [intentional silence] [music]
+Browser Tab
+    ↓
+Audio Capture (tabCapture / captureStream)
+    ↓
+Local Recording (In-Memory PCM / WebM)
+    ↓
+Smart Silence Trim (Optional Safe Window)
+    ↓
+Format Conversion (MP3 / WAV / FLAC / OGG / WebM)
+    ↓
+Local Download (Your Downloads Folder)
 ```
 
-#### Example 2: Trimming Disabled
+The extension captures audio from the active browser tab, processes it locally, optionally removes unwanted silence at the beginning and end, converts the recording into the selected format, and saves the result locally.
+
+---
+
+# Supported Use Cases
+
+Tab Audio Recorder can be useful with many browser-based audio services, including music streaming platforms, AI music generators, online radio, podcasts, web audio players, and other websites that play audio in a browser tab.
+
+### Music Streaming Services
+The extension can record audio playing in supported browser tabs, including web-based music and streaming services such as:
+* **Spotify** (record audio playing in a Spotify browser tab)
+* **YouTube Music** (record audio playing in a YouTube Music browser tab)
+* **Apple Music** (record audio playing in an Apple Music web player tab)
+* **SoundCloud** (record audio playing in a SoundCloud browser tab)
+* **Deezer** (record audio playing in a Deezer browser tab)
+* **TIDAL** (record audio playing in a TIDAL web player tab)
+* **Amazon Music** (record audio playing in an Amazon Music browser tab)
+* **Pandora** (record audio playing in a Pandora radio tab)
+* **Qobuz** (record audio playing in a Qobuz web player tab)
+* **iHeartRadio** (record audio playing in an iHeartRadio browser tab)
+
+### AI Music Generators
+The extension can also be useful when working with browser-based AI music generators such as **Suno** and **Udio**:
+* **Suno** (record audio generated or played in a Suno browser tab)
+* **Udio** (record audio generated or played in a Udio browser tab)
+* Other browser-based AI music generators, voice synthesizers, and sound effect generators.
+
+If audio is playing in the browser tab, the extension can capture the tab's audio locally and save the resulting recording.
+
+### Video Platforms
+* **YouTube** (record audio playing in a YouTube browser tab)
+* **Vimeo** (record audio playing in a Vimeo video tab)
+* **Twitch** (record audio streams playing in a Twitch browser tab)
+
+### Podcasts and Radio
+* Online radio stations and live broadcasts
+* Web-based podcast players and audiobooks
+* Educational lectures, webinars, and conference calls
+
+### Web Applications & Creative Tools
+* Browser-based digital audio workstations (DAWs) and web synthesizers
+* Online audio tools, soundboards, and voice editors
+* Browser games and interactive multimedia presentations
+
+---
+
+## Service Compatibility
+
+| Service / Platform | Use Case |
+| :--- | :--- |
+| **Suno** | Record audio playing in a browser tab |
+| **Udio** | Record audio playing in a browser tab |
+| **Spotify** | Record browser-tab audio |
+| **YouTube Music** | Record browser-tab audio |
+| **Apple Music** | Record browser-tab audio |
+| **SoundCloud** | Record browser-tab audio |
+| **Deezer** | Record browser-tab audio |
+| **TIDAL** | Record browser-tab audio |
+| **Amazon Music** | Record browser-tab audio |
+| **Pandora** | Record browser-tab audio |
+| **Qobuz** | Record browser-tab audio |
+| **YouTube** | Record browser-tab audio |
+| **Twitch** | Record browser-tab audio |
+| **Vimeo** | Record browser-tab audio |
+
+> **Note**: Examples of browser-based services where tab audio recording may be useful. Compatibility can vary by browser, operating system, and individual website implementation.
+
+---
+
+## Smart Silence Trimming
+
+Smart Silence Trimming automatically removes unwanted silence from the beginning and end of recordings while preserving intentional pauses inside the track. See [docs/smart-trim.md](docs/smart-trim.md) for full technical documentation.
+
 ```text
-Trim silence: OFF
-
-Recording:
-[silence] [music] [silence]
-
-Result:
-[silence] [music] [silence]
+                                TRACK DURATION (e.g., 03:42)
+                    ├─────────────────────────────────────────────────┤
+                    │                PROTECTED WINDOW                 │
+                    │                                                 │
+[ LEADING SILENCE ] │ [ MUSIC INTRO ] ── [ SILENCE ] ── [ MUSIC OUTRO ]│ [ TRAILING SILENCE ]
+      TRIMMED       │   PRESERVED           PRESERVED       PRESERVED │       TRIMMED
+                    └─────────────────────────────────────────────────┴──────────────────────► Time
 ```
+
+* **Trim silence (`ON / OFF`, Default: ON)**:
+  * **ON**: Automatically analyzes the recording after it finishes and trims only silence at the beginning and end. **It will NEVER remove silence from the middle of the track.**
+  * **OFF**: Disables all silence trimming. The downloaded recording contains exactly the recorded audio from start to stop.
+* **Track duration (`[ 03 : 42 ]`, Optional)**:
+  * Acts as a safe window rather than an exact cut-off time. Silence occurring before that duration is preserved because it may be part of the music. Sustained silence after the expected duration indicates the end of the track.
+  * **Dynamic UI Annotations**:
+    * Trim ON + Duration entered: `ⓘ Silence within this duration will not be trimmed.`
+    * Trim ON + Duration empty: `ⓘ Optional. Helps detect the end of the track.`
+    * Trim OFF: `ⓘ Enable Trim silence to use track duration.`
+
+---
+
+## Local Audio Format Conversion
+
+Convert tab audio recordings directly in your browser without uploading to any third-party service. See [docs/audio-conversion.md](docs/audio-conversion.md) for architecture details.
+
+| Format | Extension | Type | Default Settings | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **MP3** | `.mp3` | Lossy | 192 kbps stereo | Universal playback on all phones, cars, and media players. |
+| **WAV** | `.wav` | Lossless | 16-bit 44.1/48kHz PCM | Uncompressed pristine audio for editing in DAWs. |
+| **FLAC** | `.flac` | Lossless | Compressed | Audiophile lossless archival format via FFmpeg WASM. |
+| **OGG** | `.ogg` | Open | OGG / Opus | Open-source audio container for modern web applications. |
+| **WebM** | `.webm` | Native | Opus container | Direct browser recording pass-through with 0ms re-encoding. |
+
+* **Non-Blocking Progress UI**: Processes audio in sample blocks, yielding to the browser event loop so the popup remains fluid with a live progress indicator (`Converting audio... MP3 78%`).
+* **Multi-Format Export**: Convert to MP3, download, then select WAV and download again from the same session without re-recording.
+
+---
+
+## Privacy First
+
+> **Your audio never needs to leave your computer.**
+
+* **No audio uploads**: Recordings are created and processed entirely within your browser.
+* **No remote processing**: No external cloud rendering or remote transcoding.
+* **No audio database**: Nothing is stored on remote servers or third-party databases.
+* **No account required**: Install and use immediately with zero registration, login, or API keys.
+* **Zero telemetry**: The extension contains no tracking scripts, analytics, or behavioral telemetry.
+* **100% local**: Audio stays strictly in local browser memory and downloads directly to your computer.
+
+---
+
+## Responsible Use
+
+Tab Audio Recorder is a general-purpose browser audio recording tool. Users are responsible for ensuring that they have the necessary rights or permissions to record and save audio.
+
+The extension is **not** designed to bypass:
+* Digital Rights Management (DRM)
+* Authentication or user paywalls
+* Website download restrictions or access controls
+* Copyright-protected stream encryption
 
 ---
 
@@ -87,7 +201,7 @@ Result:
 Download the latest pre-built packages from [**GitHub Releases**](https://github.com/timalabs/tab-audio-recorder/releases).
 
 ### For Google Chrome / Brave / Microsoft Edge:
-1. Download `tab-audio-recorder-chrome-v1.2.0.zip` from the latest release.
+1. Download `tab-audio-recorder-chrome-v1.2.0.zip` from the [latest release](https://github.com/timalabs/tab-audio-recorder/releases).
 2. Unzip the file into a folder on your computer.
 3. Open `chrome://extensions/` in your browser.
 4. Enable **Developer mode** (toggle in the top-right corner).
@@ -103,29 +217,25 @@ Download the latest pre-built packages from [**GitHub Releases**](https://github
 
 ---
 
-## Privacy Guarantee
+## FAQ
 
-```
-Website (Active Tab)
-       │
-       ▼
-Tab Audio Stream (chrome.tabCapture / captureStream)
-       │
-       ▼
-MediaRecorder (Local In-Memory Blob)
-       │
-       ▼
-Smart Silence Trimming (Optional, 100% Local PCM AudioBuffer analysis)
-       │
-       ▼
-Local Download (Your Computer's Downloads folder)
-```
+### Can I record audio from Spotify?
+> The extension is designed to capture audio playing in a browser tab. Whether recording is appropriate depends on your rights and the service's terms. The extension does not bypass DRM or access controls.
 
-**All audio processing happens locally in your browser.**
-- No remote backend
-- No analytics or tracking
-- No third-party network requests
-- No user accounts or API keys required
+### Can I record audio from Suno?
+> The extension can capture audio playing in a supported browser tab. It does not bypass Suno's authentication, DRM, or access controls. Users are responsible for complying with applicable terms and rights.
+
+### Can I convert WebM to MP3?
+> Yes. Audio conversion is performed locally in the browser with sensible defaults (192 kbps stereo MP3).
+
+### Does the audio get uploaded?
+> No. The intended architecture processes recordings locally in the browser. Zero audio is ever uploaded to external servers.
+
+### Does it work with Firefox?
+> Yes, the project provides a Firefox build in addition to Chrome.
+
+### Can it remove silence?
+> Yes. Smart Silence Trimming can remove unwanted silence at the beginning and end while preserving intentional silence inside the protected track duration.
 
 ---
 
@@ -135,6 +245,23 @@ Local Download (Your Computer's Downloads folder)
 |---------|-----------------------|-------------------|----------------|
 | **Google Chrome** (v116+) | Manifest V3 | `chrome.tabCapture` + `chrome.offscreen` | `.zip` |
 | **Mozilla Firefox** (v109+) | WebExtensions MV3 | `HTMLMediaElement.captureStream()` bridge | `.xpi` / `.zip` |
+
+---
+
+## Permissions
+
+The extension requests only the minimum necessary permissions:
+
+| Permission | Reason |
+|------------|--------|
+| `tabCapture` | *(Chrome)* Captures audio from the current tab upon user request. |
+| `offscreen` | *(Chrome)* Hosts `AudioContext` and `MediaRecorder` in Manifest V3 without popup closure interruptions. |
+| `downloads` | Saves the generated audio recording to your computer. |
+| `activeTab` | Accesses the active tab strictly when the user clicks the extension. |
+| `scripting` | *(Firefox)* Injects the media element capture script into the current tab. |
+| `storage` | Persists user settings (Trim silence toggle, duration hint, format preference) locally in browser. |
+
+*No history, cookie, blanket host, or webRequest permissions are ever requested.*
 
 ---
 
@@ -168,65 +295,6 @@ npm run build:firefox  # Builds Firefox only
 # Create installation packages (dist/releases/)
 npm run package
 ```
-
----
-
-## How It Works
-
-### Chrome Architecture (Manifest V3)
-In Chrome Manifest V3, background service workers lack access to DOM APIs such as `AudioContext` and `MediaRecorder`. To solve this cleanly:
-1. When you click **Start Recording**, the popup messages the background service worker with your trimming preferences.
-2. The service worker calls `chrome.tabCapture.getMediaStreamId({ targetTabId })` to obtain a capture token.
-3. The service worker spins up an **offscreen document** (`offscreen.html`) with reasons `USER_MEDIA` and `AUDIO_PLAYBACK`.
-4. The offscreen document calls `navigator.mediaDevices.getUserMedia()` with the tab stream ID.
-5. **Audible Pass-Through**: The stream is piped through a Web Audio `AudioContext` into `audioCtx.destination`, keeping the tab audible while recording.
-6. The offscreen document runs `MediaRecorder` and an `AudioAnalyzer` node, broadcasting real-time audio levels and elapsed time to the popup.
-7. Upon stopping, if **Trim silence** is ON, the audio is analyzed locally using Web Audio API to slice away leading and trailing silence, saving pristine PCM WAV or WebM audio.
-
-### Firefox Architecture (WebExtensions)
-Firefox does not support `chrome.tabCapture` or `chrome.offscreen`. To provide equivalent functionality:
-1. The extension injects a content script bridge into the active tab.
-2. The content script detects active `<audio>` or `<video>` elements in the DOM and calls `HTMLMediaElement.prototype.captureStream()`.
-3. Audio chunks are encoded by `MediaRecorder`, trimmed locally if enabled, and delivered to the background script for local download.
-
----
-
-## Permissions
-
-The extension requests only the minimum necessary permissions:
-
-| Permission | Reason |
-|------------|--------|
-| `tabCapture` | *(Chrome)* Captures audio from the current tab upon user request. |
-| `offscreen` | *(Chrome)* Hosts `AudioContext` and `MediaRecorder` in Manifest V3 without popup closure interruptions. |
-| `downloads` | Saves the generated audio recording to your computer. |
-| `activeTab` | Accesses the active tab strictly when the user clicks the extension. |
-| `scripting` | *(Firefox)* Injects the media element capture script into the current tab. |
-| `storage` | Persists user settings (Trim silence toggle and duration hint) locally in browser. |
-
-*No history, cookie, blanket host, or webRequest permissions are ever requested.*
-
----
-
-## Limitations
-
-- **Internal Browser Pages**: Extensions cannot capture audio on restricted internal pages (`chrome://`, `about:`, `moz-extension://`, `chrome-extension://`).
-- **DRM-Protected Content**: Browsers prohibit capturing media streams protected by DRM (e.g. Netflix, Spotify Web Player) via standard WebExtension APIs.
-- **Firefox Multiple Audio Sources**: On Firefox, recording relies on media element capture (`<video>`/`<audio>`), which captures standard HTML5 players. Pure synthesized Web Audio graphs without HTML media elements on Firefox are limited by Firefox's lack of tab-level capture APIs.
-
----
-
-## Product Positioning
-
-Tab Audio Recorder is a general-purpose local browser utility designed for capturing tab audio (e.g., presentations, meetings, royalty-free web audio, video conferences, or educational materials).
-
-It is **NOT** designed to bypass:
-- Digital Rights Management (DRM)
-- Authentication or paywalls
-- Download restrictions or access controls
-- Protected copyright material
-
-Users are responsible for ensuring they have the legal right or permission to record and save the audio.
 
 ---
 

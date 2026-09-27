@@ -1,7 +1,7 @@
 {
   "name": "tab-audio-recorder",
   "version": "1.2.0",
-  "description": "Production-quality cross-browser extension to record audio from browser tabs privately and locally.",
+  "description": "Open-source Chrome & Firefox extension for recording browser-tab audio locally, trimming silence, and converting recordings to MP3, WAV, FLAC, OGG, and WebM.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,13 +22,17 @@
     "url": "https://github.com/timalabs/tab-audio-recorder/issues"
   },
   "keywords": [
+    "browser-audio-recorder",
+    "chrome-audio-recorder",
+    "firefox-audio-recorder",
+    "tab-audio-recorder",
+    "record-browser-audio",
+    "audio-capture",
     "browser-extension",
-    "audio-recorder",
-    "chrome-extension",
-    "firefox-addon",
-    "tab-capture",
-    "media-recorder",
-    "webaudio"
+    "web-audio",
+    "audio-converter",
+    "silence-trimmer",
+    "open-source"
   ],
   "author": "timalabs",
   "license": "MIT",
