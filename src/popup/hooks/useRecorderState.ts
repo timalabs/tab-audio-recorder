@@ -7,18 +7,24 @@ import {
   TabInfo,
 } from '../../recorder/RecorderState.ts';
 import { isRestrictedUrl } from '../../utils/errors.ts';
+import { DEFAULT_SETTINGS, loadSettings, RecorderSettings, saveSettings } from '../../utils/settings.ts';
 
 export function useRecorderState() {
   const [state, setState] = useState<RecorderState>({ ...INITIAL_RECORDER_STATE });
   const [currentTab, setCurrentTab] = useState<TabInfo | null>(null);
   const [liveElapsedMs, setLiveElapsedMs] = useState<number>(0);
   const [audioLevel, setAudioLevel] = useState<number>(0);
+  const [settings, setSettingsState] = useState<RecorderSettings>({ ...DEFAULT_SETTINGS });
   const timerRef = useRef<number | null>(null);
 
-  // Load current active tab info
+  // Load current active tab info and persistent settings
   useEffect(() => {
     browserApi.getActiveTab().then((tab) => {
       setCurrentTab(tab);
+    });
+
+    loadSettings().then((loaded) => {
+      setSettingsState(loaded);
     });
   }, []);
 
@@ -28,6 +34,9 @@ export function useRecorderState() {
       const bgState = await browserApi.sendMessage<RecorderState>({ type: 'GET_STATE' });
       if (bgState) {
         setState(bgState);
+        if (bgState.settings) {
+          setSettingsState(bgState.settings);
+        }
         if (bgState.status === 'RECORDING' && bgState.startedAt) {
           setLiveElapsedMs(Date.now() - bgState.startedAt);
         } else {
@@ -46,6 +55,9 @@ export function useRecorderState() {
     const cleanupListener = browserApi.addMessageListener((msg: ExtensionMessage) => {
       if (msg.type === 'STATE_CHANGED' && msg.state) {
         setState(msg.state);
+        if (msg.state.settings) {
+          setSettingsState(msg.state.settings);
+        }
         if (msg.state.status === 'RECORDING' && msg.state.startedAt) {
           setLiveElapsedMs(Date.now() - msg.state.startedAt);
         } else {
@@ -87,6 +99,19 @@ export function useRecorderState() {
     };
   }, [state.status, state.startedAt]);
 
+  const updateSettings = useCallback(async (newSettings: Partial<RecorderSettings>) => {
+    const updated = await saveSettings(newSettings);
+    setSettingsState(updated);
+    try {
+      await browserApi.sendMessage({
+        type: 'UPDATE_SETTINGS',
+        settings: updated,
+      });
+    } catch {
+      // background might be dormant
+    }
+  }, []);
+
   const startRecording = useCallback(async () => {
     if (currentTab?.url && isRestrictedUrl(currentTab.url)) {
       setState((prev) => ({
@@ -102,6 +127,7 @@ export function useRecorderState() {
       const res = await browserApi.sendMessage<{ success: boolean; error?: string }>({
         type: 'START_RECORDING',
         tabId: currentTab?.id,
+        settings,
       });
       if (res && !res.success) {
         setState((prev) => ({
@@ -118,7 +144,7 @@ export function useRecorderState() {
         errorMessage: msg,
       }));
     }
-  }, [currentTab]);
+  }, [currentTab, settings]);
 
   const stopRecording = useCallback(async () => {
     setState((prev) => ({ ...prev, status: 'STOPPING' }));
@@ -153,6 +179,8 @@ export function useRecorderState() {
     currentTab,
     liveElapsedMs,
     audioLevel,
+    settings,
+    updateSettings,
     startRecording,
     stopRecording,
     resetRecording,

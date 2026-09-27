@@ -21,6 +21,15 @@ if (!fs.existsSync(releasesDir)) {
 
 function createZipArchive(sourceDir, outPath) {
   return new Promise((resolve, reject) => {
+    // If output file already exists, remove it first
+    if (fs.existsSync(outPath)) {
+      try {
+        fs.unlinkSync(outPath);
+      } catch {
+        // ignore
+      }
+    }
+
     const output = fs.createWriteStream(outPath);
     const archive = new ZipArchive({
       zlib: { level: 9 }, // Maximum compression
@@ -76,7 +85,7 @@ async function main() {
   await createZipArchive(firefoxDir, firefoxZipPath);
 
   console.log(`[3/3] Creating Firefox XPI bundle -> ${firefoxXpiName}...`);
-  fs.copyFileSync(firefoxZipPath, firefoxXpiPath);
+  await createZipArchive(firefoxDir, firefoxXpiPath);
 
   console.log(`\n Release packages created successfully in dist/releases/:\n`);
 

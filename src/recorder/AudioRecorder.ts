@@ -1,6 +1,8 @@
 import { AudioAnalyzer, SilenceConfig } from '../audio/AudioAnalyzer.ts';
 import { getSupportedMimeType, MimeTypeOption } from '../audio/mimeTypes.ts';
+import { trimAudioBlob } from '../audio/silenceTrimmer.ts';
 import { generateRecordingFilename } from '../utils/filename.ts';
+import { RecorderSettings } from '../utils/settings.ts';
 import { RecordingResult, TabInfo } from './RecorderState.ts';
 
 export interface AudioRecorderCallbacks {
@@ -21,20 +23,27 @@ export class AudioRecorder {
   private callbacks: AudioRecorderCallbacks;
   private completedResult: RecordingResult | null = null;
   private objectUrl: string | null = null;
+  private settings?: RecorderSettings;
 
   constructor(
     stream: MediaStream,
     tabInfo?: TabInfo,
     callbacks: AudioRecorderCallbacks = {},
-    passThroughToSpeaker: boolean = true
+    passThroughToSpeaker: boolean = true,
+    settings?: RecorderSettings
   ) {
     this.stream = stream;
     this.tabInfo = tabInfo;
     this.callbacks = callbacks;
     this.selectedMime = getSupportedMimeType();
+    this.settings = settings;
 
     // Set up real-time audio analysis and tab audio pass-through
     this.analyzer = new AudioAnalyzer(stream, passThroughToSpeaker);
+  }
+
+  public setSettings(settings?: RecorderSettings): void {
+    this.settings = settings;
   }
 
   public start(): void {
@@ -102,32 +111,56 @@ export class AudioRecorder {
         this.analyzer.stopMonitoring();
       }
 
-      this.mediaRecorder.onstop = () => {
+      this.mediaRecorder.onstop = async () => {
         try {
-          const blob = new Blob(this.chunks, {
+          const rawBlob = new Blob(this.chunks, {
             type: this.selectedMime.mimeType || 'audio/webm',
           });
+
+          let finalBlob = rawBlob;
+          let durationMs = Math.max(0, this.stoppedAt - this.startedAt);
+          let mimeTypeLabel = this.selectedMime.label;
+          let fileExtension = this.selectedMime.extension;
+          let isTrimmed = false;
+
+          // Apply Smart Silence Trimming if enabled
+          const shouldTrim = this.settings ? this.settings.trimSilence : true;
+
+          if (shouldTrim) {
+            const trimResult = await trimAudioBlob(rawBlob, {
+              trimSilence: true,
+              expectedDurationMs: this.settings?.expectedDurationMs,
+            });
+
+            if (trimResult.trimmed) {
+              finalBlob = trimResult.blob;
+              durationMs = trimResult.durationMs;
+              mimeTypeLabel = trimResult.mimeType;
+              fileExtension = trimResult.extension;
+              isTrimmed = true;
+            }
+          }
 
           if (this.objectUrl) {
             URL.revokeObjectURL(this.objectUrl);
           }
-          this.objectUrl = URL.createObjectURL(blob);
+          this.objectUrl = URL.createObjectURL(finalBlob);
 
-          const durationMs = Math.max(0, this.stoppedAt - this.startedAt);
           const filename = generateRecordingFilename(
             this.tabInfo?.title,
-            this.selectedMime.extension,
+            fileExtension,
             new Date(this.startedAt || Date.now())
           );
 
           const result: RecordingResult = {
             blobUrl: this.objectUrl,
             durationMs,
-            sizeBytes: blob.size,
-            mimeType: this.selectedMime.label,
+            sizeBytes: finalBlob.size,
+            mimeType: mimeTypeLabel,
             filename,
             tabTitle: this.tabInfo?.title,
             domain: this.tabInfo?.domain,
+            trimmed: isTrimmed,
           };
 
           this.completedResult = result;

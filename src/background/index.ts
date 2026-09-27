@@ -46,8 +46,17 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
     return;
   }
 
+  if (message.type === 'UPDATE_SETTINGS') {
+    currentState.settings = message.settings;
+    if (browserApi.isChrome() || typeof chrome.tabCapture !== 'undefined') {
+      chrome.runtime.sendMessage(message).catch(() => {});
+    }
+    sendResponse({ success: true });
+    return true;
+  }
+
   if (message.type === 'START_RECORDING') {
-    handleStartRecording(message.tabId)
+    handleStartRecording(message.tabId, message.settings)
       .then(() => sendResponse({ success: true }))
       .catch((err) => {
         const errorMsg = getFriendlyErrorMessage(err);
@@ -56,6 +65,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
           elapsedMs: 0,
           errorMessage: errorMsg,
           tabInfo: currentState.tabInfo,
+          settings: message.settings || currentState.settings,
         };
         broadcastState(currentState);
         sendResponse({ success: false, error: errorMsg });
@@ -89,9 +99,12 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
 
   // Firefox Content Script Handlers
   if (message.type === 'FF_RECORDING_DATA') {
+    const isWav = message.mimeType.toLowerCase().includes('wav') || message.trimmed;
+    const extension = isWav ? 'wav' : 'webm';
+
     const filename = generateRecordingFilename(
       currentState.tabInfo?.title,
-      'webm',
+      extension,
       new Date(currentState.startedAt || Date.now())
     );
 
@@ -99,6 +112,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
       status: 'COMPLETED',
       elapsedMs: message.durationMs,
       tabInfo: currentState.tabInfo,
+      settings: currentState.settings,
       result: {
         dataUrl: message.blobData,
         downloadUrl: message.blobData,
@@ -108,6 +122,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
         filename,
         tabTitle: currentState.tabInfo?.title,
         domain: currentState.tabInfo?.domain,
+        trimmed: message.trimmed,
       },
     };
     broadcastState(currentState);
@@ -120,6 +135,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
       elapsedMs: 0,
       errorMessage: message.message,
       tabInfo: currentState.tabInfo,
+      settings: currentState.settings,
     };
     broadcastState(currentState);
     return;
@@ -128,7 +144,10 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
   return false;
 });
 
-async function handleStartRecording(specifiedTabId?: number): Promise<void> {
+async function handleStartRecording(
+  specifiedTabId?: number,
+  settings?: RecorderState['settings']
+): Promise<void> {
   const tabInfo: TabInfo = await browserApi.getActiveTab();
   const tabId = specifiedTabId || tabInfo.id;
 
@@ -144,6 +163,7 @@ async function handleStartRecording(specifiedTabId?: number): Promise<void> {
     status: 'STARTING',
     elapsedMs: 0,
     tabInfo,
+    settings: settings || currentState.settings,
   };
   broadcastState(currentState);
 
@@ -159,6 +179,7 @@ async function handleStartRecording(specifiedTabId?: number): Promise<void> {
           type: 'INIT_CHROME_OFFSCREEN_CAPTURE',
           streamId,
           tabInfo,
+          settings: currentState.settings,
         },
         (response) => {
           if (chrome.runtime.lastError) {
@@ -177,19 +198,21 @@ async function handleStartRecording(specifiedTabId?: number): Promise<void> {
       startedAt: Date.now(),
       elapsedMs: 0,
       tabInfo,
+      settings: currentState.settings,
     };
     broadcastState(currentState);
     return;
   }
 
   // Firefox / standard WebExtension flow using content script
-  await startFirefoxTabRecording(tabId, tabInfo);
+  await startFirefoxTabRecording(tabId, tabInfo, currentState.settings);
 
   currentState = {
     status: 'RECORDING',
     startedAt: Date.now(),
     elapsedMs: 0,
     tabInfo,
+    settings: currentState.settings,
   };
   broadcastState(currentState);
 }
@@ -234,6 +257,7 @@ async function handleResetRecording(): Promise<void> {
     status: 'IDLE',
     elapsedMs: 0,
     tabInfo: currentState.tabInfo,
+    settings: currentState.settings,
   };
   broadcastState(currentState);
 }

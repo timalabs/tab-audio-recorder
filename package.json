@@ -1,6 +1,6 @@
 {
   "name": "tab-audio-recorder",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Production-quality cross-browser extension to record audio from browser tabs privately and locally.",
   "type": "module",
   "scripts": {

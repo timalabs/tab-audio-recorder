@@ -42,8 +42,17 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
     return true;
   }
 
+  if (message.type === 'UPDATE_SETTINGS') {
+    currentState.settings = message.settings;
+    if (activeRecorder) {
+      activeRecorder.setSettings(message.settings);
+    }
+    sendResponse({ success: true });
+    return true;
+  }
+
   if (message.type === 'INIT_CHROME_OFFSCREEN_CAPTURE') {
-    handleStartRecording(message.streamId, message.tabInfo)
+    handleStartRecording(message.streamId, message.tabInfo, message.settings)
       .then(() => sendResponse({ success: true }))
       .catch((err) => {
         const friendly = getFriendlyErrorMessage(err, message.tabInfo.url);
@@ -52,6 +61,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
           elapsedMs: 0,
           tabInfo: message.tabInfo,
           errorMessage: friendly,
+          settings: message.settings,
         });
         sendResponse({ success: false, error: friendly });
       });
@@ -84,16 +94,23 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
   return false;
 });
 
-async function handleStartRecording(streamId: string, tabInfo: RecorderState['tabInfo']): Promise<void> {
+async function handleStartRecording(
+  streamId: string,
+  tabInfo: RecorderState['tabInfo'],
+  settings?: RecorderState['settings']
+): Promise<void> {
   if (activeRecorder) {
     activeRecorder.cleanup();
     activeRecorder = null;
   }
 
+  currentState.settings = settings;
+
   broadcastState({
     status: 'STARTING',
     elapsedMs: 0,
     tabInfo,
+    settings,
   });
 
   // Capture tab audio stream using the tab streamId
@@ -123,6 +140,7 @@ async function handleStartRecording(streamId: string, tabInfo: RecorderState['ta
           elapsedMs: 0,
           tabInfo,
           errorMessage: getFriendlyErrorMessage(err, tabInfo?.url),
+          settings: currentState.settings,
         });
       },
       onComplete: (result) => {
@@ -131,10 +149,12 @@ async function handleStartRecording(streamId: string, tabInfo: RecorderState['ta
           elapsedMs: result.durationMs,
           tabInfo,
           result,
+          settings: currentState.settings,
         });
       },
     },
-    true // Pass-through to speakers so user can still hear tab
+    true, // Pass-through to speakers so user can still hear tab
+    settings
   );
 
   activeRecorder.start();
@@ -144,6 +164,7 @@ async function handleStartRecording(streamId: string, tabInfo: RecorderState['ta
     startedAt: Date.now(),
     elapsedMs: 0,
     tabInfo,
+    settings: currentState.settings,
   });
 }
 
@@ -160,6 +181,7 @@ async function handleStopRecording(): Promise<RecordingResult> {
     startedAt: currentState.startedAt,
     elapsedMs: activeRecorder.getDurationMs(),
     tabInfo: currentState.tabInfo,
+    settings: currentState.settings,
   });
 
   const result = await activeRecorder.stop();
@@ -169,6 +191,7 @@ async function handleStopRecording(): Promise<RecordingResult> {
     elapsedMs: result.durationMs,
     tabInfo: currentState.tabInfo,
     result,
+    settings: currentState.settings,
   });
 
   return result;
@@ -184,6 +207,7 @@ function handleReset(): void {
     status: 'IDLE',
     elapsedMs: 0,
     tabInfo: currentState.tabInfo,
+    settings: currentState.settings,
   });
 }
 

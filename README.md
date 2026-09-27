@@ -16,14 +16,68 @@ All processing occurs 100% locally in your browser. **No audio is ever uploaded 
 
 ## Key Features
 
+- ✂️ **Smart Silence Trimming**: Automatically removes unwanted silence at the beginning and end of recordings without touching internal silence.
+- ⏱️ **Safe Track Duration Window**: Optional contextual signal helps preserve intentional dramatic pauses and breakdowns within tracks.
 - 🔒 **Zero-Cloud Privacy**: Audio is processed exclusively in browser memory and saved to disk. No server, no backend, no telemetry, no tracking.
 - ⚡ **Persistent Background Recording**: Closing or reopening the popup window will **not** stop your recording.
 - 🔊 **Audible Pass-Through**: Capturing audio does not mute the tab—you can listen while recording.
 - 📊 **Live Audio Level Meter**: Lightweight dynamic multi-bar visualizer shows volume levels in real-time.
 - ⏱️ **Accurate Elapsed Timer**: Formats elapsed duration (`00:00` or `01:32:45`) synchronized with the background engine.
-- 🏷️ **Intelligent Safe Filenames**: Sanitizes page titles and generates clean filenames (e.g., `Podcast-Episode-2026-09-27-21-45-12.webm`).
-- 🎛️ **Dynamic MIME Negotiation**: Detects best browser-supported format (`WebM / Opus`, `OGG / Opus`, `MP4`).
-- 🎨 **Dark Premium Interface**: 360px wide, high-contrast, keyboard-accessible UI.
+- 🏷️ **Intelligent Safe Filenames**: Sanitizes page titles and generates clean filenames (e.g., `Podcast-Episode-2026-09-27-21-45-12.wav`).
+- 🎛️ **Dynamic MIME Negotiation**: Detects best browser-supported format (`WebM / Opus`, `WAV / PCM`, `OGG / Opus`, `MP4`).
+- 🎨 **Dark Premium Interface**: 360px wide, high-contrast, keyboard-accessible UI with local settings persistence.
+
+---
+
+# Smart Silence Trimming
+
+> Smart Silence Trimming automatically removes unwanted silence from the beginning and end of recordings while preserving intentional pauses inside the track.
+
+### Trim silence
+
+* **ON (Default)**: When enabled, the extension analyzes the recording after it finishes and removes only:
+  * silence at the beginning
+  * silence at the end
+  
+  **It will NEVER remove silence from the middle of the track.**
+* **OFF**: When disabled, no silence trimming or audio processing is performed. The downloaded recording contains exactly the recorded audio from start to stop.
+
+### Track duration
+
+Users can optionally specify the expected track duration (e.g., `00:45`, `01:30`, `03:42`, `05:00`).
+
+This helps the extension distinguish intentional silence inside a track from silence that occurs after the track has finished.
+
+> If a track is expected to be 3:42 long, silence occurring before that point is preserved because it may be part of the music. After the expected duration, sustained silence can be interpreted as the end of the track.
+
+> **Note**: Track duration is used as a detection hint, not as an exact cut-off time.
+
+The extension does **not** hard-cut the audio at the specified duration. The actual track may be slightly shorter or longer than the duration hint.
+
+### Examples
+
+#### Example 1: Trimming Enabled with Duration Hint
+```text
+Trim silence: ON
+Track duration: 03:42
+
+Recording:
+[silence] [music] [intentional silence] [music] [silence]
+
+Result:
+[music] [intentional silence] [music]
+```
+
+#### Example 2: Trimming Disabled
+```text
+Trim silence: OFF
+
+Recording:
+[silence] [music] [silence]
+
+Result:
+[silence] [music] [silence]
+```
 
 ---
 
@@ -32,7 +86,7 @@ All processing occurs 100% locally in your browser. **No audio is ever uploaded 
 Download the latest pre-built packages from [**GitHub Releases**](https://github.com/timalabs/tab-audio-recorder/releases).
 
 ### For Google Chrome / Brave / Microsoft Edge:
-1. Download `tab-audio-recorder-chrome-v1.0.0.zip` from the latest release.
+1. Download `tab-audio-recorder-chrome-v1.1.0.zip` from the latest release.
 2. Unzip the file into a folder on your computer.
 3. Open `chrome://extensions/` in your browser.
 4. Enable **Developer mode** (toggle in the top-right corner).
@@ -40,7 +94,7 @@ Download the latest pre-built packages from [**GitHub Releases**](https://github
 6. Pin **Tab Audio Recorder** to your toolbar.
 
 ### For Mozilla Firefox:
-1. Download `tab-audio-recorder-firefox-v1.0.0.xpi` (or `.zip`).
+1. Download `tab-audio-recorder-firefox-v1.1.0.xpi` (or `.zip`).
 2. Open `about:debugging#/runtime/this-firefox` in Firefox.
 3. Click **Load Temporary Add-on...**.
 4. Select the downloaded `.xpi` (or `manifest.json` from the unzipped archive).
@@ -58,6 +112,9 @@ Tab Audio Stream (chrome.tabCapture / captureStream)
        │
        ▼
 MediaRecorder (Local In-Memory Blob)
+       │
+       ▼
+Smart Silence Trimming (Optional, 100% Local PCM AudioBuffer analysis)
        │
        ▼
 Local Download (Your Computer's Downloads folder)
@@ -117,19 +174,19 @@ npm run package
 
 ### Chrome Architecture (Manifest V3)
 In Chrome Manifest V3, background service workers lack access to DOM APIs such as `AudioContext` and `MediaRecorder`. To solve this cleanly:
-1. When you click **Start Recording**, the popup messages the background service worker.
+1. When you click **Start Recording**, the popup messages the background service worker with your trimming preferences.
 2. The service worker calls `chrome.tabCapture.getMediaStreamId({ targetTabId })` to obtain a capture token.
 3. The service worker spins up an **offscreen document** (`offscreen.html`) with reasons `USER_MEDIA` and `AUDIO_PLAYBACK`.
 4. The offscreen document calls `navigator.mediaDevices.getUserMedia()` with the tab stream ID.
 5. **Audible Pass-Through**: The stream is piped through a Web Audio `AudioContext` into `audioCtx.destination`, keeping the tab audible while recording.
 6. The offscreen document runs `MediaRecorder` and an `AudioAnalyzer` node, broadcasting real-time audio levels and elapsed time to the popup.
-7. Because the offscreen document and service worker persist independently of the popup, closing the popup has zero effect on ongoing recording.
+7. Upon stopping, if **Trim silence** is ON, the audio is analyzed locally using Web Audio API to slice away leading and trailing silence, saving pristine PCM WAV or WebM audio.
 
 ### Firefox Architecture (WebExtensions)
 Firefox does not support `chrome.tabCapture` or `chrome.offscreen`. To provide equivalent functionality:
 1. The extension injects a content script bridge into the active tab.
 2. The content script detects active `<audio>` or `<video>` elements in the DOM and calls `HTMLMediaElement.prototype.captureStream()`.
-3. Audio chunks are encoded by `MediaRecorder` and delivered to the background script for local download.
+3. Audio chunks are encoded by `MediaRecorder`, trimmed locally if enabled, and delivered to the background script for local download.
 
 ---
 
@@ -144,6 +201,7 @@ The extension requests only the minimum necessary permissions:
 | `downloads` | Saves the generated audio recording to your computer. |
 | `activeTab` | Accesses the active tab strictly when the user clicks the extension. |
 | `scripting` | *(Firefox)* Injects the media element capture script into the current tab. |
+| `storage` | Persists user settings (Trim silence toggle and duration hint) locally in browser. |
 
 *No history, cookie, blanket host, or webRequest permissions are ever requested.*
 

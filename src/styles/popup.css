@@ -384,3 +384,172 @@ body {
   flex-shrink: 0;
   margin-top: 2px;
 }
+
+/* Smart Settings Card */
+.smart-settings-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.smart-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 4px;
+}
+
+.smart-settings-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: opacity 0.2s ease;
+}
+
+.settings-row.row-disabled {
+  opacity: 0.45;
+}
+
+.settings-label-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.settings-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+/* Toggle Switch */
+.toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 12px;
+}
+
+.toggle-btn:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+.toggle-track {
+  width: 36px;
+  height: 20px;
+  background-color: #21262d;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  position: relative;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  display: inline-block;
+}
+
+.toggle-btn.active .toggle-track {
+  background-color: var(--accent-green);
+  border-color: var(--accent-green);
+}
+
+.toggle-thumb {
+  width: 14px;
+  height: 14px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s ease;
+  display: block;
+}
+
+.toggle-btn.active .toggle-thumb {
+  transform: translateX(16px);
+}
+
+.toggle-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  min-width: 26px;
+  text-align: left;
+}
+
+.toggle-btn.active .toggle-text {
+  color: #3fb950;
+}
+
+/* Duration Input */
+.duration-input-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.duration-input {
+  width: 72px;
+  padding: 5px 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  text-align: center;
+  transition: border-color 0.15s ease;
+}
+
+.duration-input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 1px var(--accent-blue);
+}
+
+.duration-input:disabled {
+  background: #12161c;
+  color: var(--text-muted);
+  cursor: not-allowed;
+  border-color: var(--border-subtle);
+}
+
+/* Smart Trimmed Badge in Completed Card */
+.smart-trimmed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #3fb950;
+  background: rgba(35, 134, 54, 0.15);
+  border: 1px solid rgba(63, 185, 80, 0.35);
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: auto;
+}

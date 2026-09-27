@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Download, Plus } from 'lucide-react';
+import { CheckCircle2, Download, Plus, Scissors } from 'lucide-react';
 import { RecordingResult } from '../../recorder/RecorderState.ts';
 import { formatBytes } from '../../utils/formatters.ts';
 import { formatDuration } from '../../utils/time.ts';
@@ -22,6 +22,12 @@ export const CompletedView: React.FC<CompletedViewProps> = ({
       <div className="completed-title">
         <CheckCircle2 size={18} color="var(--accent-green)" />
         <span>Recording Complete</span>
+        {result.trimmed && (
+          <span className="smart-trimmed-badge" title="Silence trimmed at beginning and end">
+            <Scissors size={11} />
+            <span>Trimmed</span>
+          </span>
+        )}
       </div>
 
       <div className="completed-grid">
@@ -41,8 +47,10 @@ export const CompletedView: React.FC<CompletedViewProps> = ({
         </div>
 
         <div className="completed-item">
-          <span className="completed-label">Storage</span>
-          <span className="completed-value">Local Only</span>
+          <span className="completed-label">Silence Trim</span>
+          <span className="completed-value">
+            {result.trimmed ? 'Start/End Trimmed' : 'Untouched'}
+          </span>
         </div>
 
         <div className="completed-filename" title={result.filename}>

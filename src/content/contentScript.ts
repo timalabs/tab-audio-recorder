@@ -1,8 +1,10 @@
 import { AudioRecorder } from '../recorder/AudioRecorder.ts';
 import { ExtensionMessage, RecordingResult, TabInfo } from '../recorder/RecorderState.ts';
+import { RecorderSettings } from '../utils/settings.ts';
 
 let contentRecorder: AudioRecorder | null = null;
 let currentTabInfo: TabInfo | null = null;
+let currentSettings: RecorderSettings | undefined = undefined;
 
 function findBestMediaElement(): HTMLMediaElement | null {
   const elements = Array.from(document.querySelectorAll<HTMLMediaElement>('video, audio'));
@@ -24,6 +26,7 @@ function findBestMediaElement(): HTMLMediaElement | null {
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {
   if (message.type === 'FF_START_CONTENT_RECORDING') {
     currentTabInfo = message.tabInfo;
+    currentSettings = message.settings;
     handleStart()
       .then(() => sendResponse({ success: true }))
       .catch((err) => sendResponse({ success: false, error: err.message }));
@@ -86,7 +89,8 @@ async function handleStart(): Promise<void> {
         }).catch(() => {});
       },
     },
-    false // In-page elements are already audible through DOM, don't double-route
+    false, // In-page elements are already audible through DOM, don't double-route
+    currentSettings
   );
 
   contentRecorder.start();
@@ -110,6 +114,7 @@ async function handleStop(): Promise<RecordingResult> {
         mimeType: result.mimeType,
         durationMs: result.durationMs,
         sizeBytes: result.sizeBytes,
+        trimmed: result.trimmed,
       }).catch(() => {});
     };
     reader.readAsDataURL(blob);

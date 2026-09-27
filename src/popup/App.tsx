@@ -6,6 +6,7 @@ import { AudioVisualizer } from './components/AudioVisualizer.tsx';
 import { RecordingControls } from './components/RecordingControls.tsx';
 import { CompletedView } from './components/CompletedView.tsx';
 import { ErrorBanner } from './components/ErrorBanner.tsx';
+import { SmartRecordingSettings } from './components/SmartRecordingSettings.tsx';
 import { useRecorderState } from './hooks/useRecorderState.ts';
 import '../styles/popup.css';
 
@@ -15,6 +16,8 @@ export const App: React.FC = () => {
     currentTab,
     liveElapsedMs,
     audioLevel,
+    settings,
+    updateSettings,
     startRecording,
     stopRecording,
     resetRecording,
@@ -23,6 +26,10 @@ export const App: React.FC = () => {
 
   const isCompleted = state.status === 'COMPLETED';
   const isError = state.status === 'ERROR';
+  const isRecordingActive =
+    state.status === 'RECORDING' ||
+    state.status === 'STARTING' ||
+    state.status === 'STOPPING';
 
   return (
     <div className="popup-container">
@@ -58,6 +65,12 @@ export const App: React.FC = () => {
               active={state.status === 'RECORDING'}
             />
           </div>
+
+          <SmartRecordingSettings
+            settings={settings}
+            onUpdateSettings={updateSettings}
+            disabled={isRecordingActive}
+          />
 
           <RecordingControls
             status={state.status}

@@ -1,4 +1,5 @@
 import { TabInfo } from '../recorder/RecorderState.ts';
+import { RecorderSettings } from '../utils/settings.ts';
 
 /**
  * Firefox platform implementation for media element audio capture.
@@ -7,7 +8,11 @@ import { TabInfo } from '../recorder/RecorderState.ts';
 /**
  * Injects content script into active tab if not already present, and starts capture.
  */
-export async function startFirefoxTabRecording(tabId: number, tabInfo: TabInfo): Promise<void> {
+export async function startFirefoxTabRecording(
+  tabId: number,
+  tabInfo: TabInfo,
+  settings?: RecorderSettings
+): Promise<void> {
   if (typeof chrome === 'undefined' || !chrome.tabs) {
     throw new Error('Tabs API unavailable in Firefox context');
   }
@@ -17,6 +22,7 @@ export async function startFirefoxTabRecording(tabId: number, tabInfo: TabInfo):
     const response = await sendTabMessage<{ success: boolean; error?: string }>(tabId, {
       type: 'FF_START_CONTENT_RECORDING',
       tabInfo,
+      settings,
     });
     if (response?.error) {
       throw new Error(response.error);
@@ -51,6 +57,7 @@ export async function startFirefoxTabRecording(tabId: number, tabInfo: TabInfo):
   const resp = await sendTabMessage<{ success: boolean; error?: string }>(tabId, {
     type: 'FF_START_CONTENT_RECORDING',
     tabInfo,
+    settings,
   });
 
   if (resp?.error) {
