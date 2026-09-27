@@ -12,7 +12,7 @@ interface RecordingControlsProps {
 
 export const RecordingControls: React.FC<RecordingControlsProps> = ({
   status,
-  autoStartEnabled = false,
+  autoStartEnabled: _autoStartEnabled = false,
   onStart,
   onStop,
   onForceRecord,
@@ -61,7 +61,7 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
       <div className="button-group">
         <button className="btn btn-record" disabled aria-busy="true">
           <Radio size={16} className="animate-pulse text-accent" />
-          <span>Audio detected! Starting...</span>
+          <span>Audio detected</span>
         </button>
       </div>
     );
@@ -102,20 +102,11 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
           type="button"
           className="btn btn-record"
           onClick={onStart}
-          aria-label={autoStartEnabled ? 'Start waiting for audio' : 'Start recording active browser tab'}
+          aria-label="Start recording active browser tab"
           autoFocus
         >
-          {autoStartEnabled ? (
-            <>
-              <Radio size={16} />
-              <span>Wait for Audio</span>
-            </>
-          ) : (
-            <>
-              <Circle size={16} fill="currentColor" />
-              <span>Start Recording</span>
-            </>
-          )}
+          <Circle size={16} fill="currentColor" />
+          <span>Start Recording</span>
         </button>
       </div>
     );

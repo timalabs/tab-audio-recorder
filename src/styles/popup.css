@@ -378,6 +378,7 @@ body {
   color: #ff7b72;
   font-size: 13px;
   line-height: 1.4;
+  white-space: pre-line;
 }
 
 .error-banner svg {

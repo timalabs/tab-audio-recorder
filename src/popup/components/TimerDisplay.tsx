@@ -19,9 +19,9 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
   if (status === 'WAITING_FOR_AUDIO') {
     label = 'Waiting for audio...';
   } else if (status === 'AUDIO_DETECTED') {
-    label = 'Audio detected! Starting...';
+    label = 'Audio detected';
   } else if (isRecording) {
-    label = '🔴 Recording active';
+    label = '🔴 Recording';
   } else if (status === 'STARTING') {
     label = 'Connecting to tab...';
   }

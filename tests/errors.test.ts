@@ -46,7 +46,8 @@ describe('Error Handling and Restricted URLs', () => {
     it('should translate missing audio tracks gracefully', () => {
       const error = new Error('No audio track available in requested stream');
       const msg = getFriendlyErrorMessage(error);
-      expect(msg).toContain('No active audio track was detected');
+      expect(msg).toContain('No active audio track detected on this tab');
+      expect(msg).toContain('Start playing audio on this tab and try again');
     });
 
     it('should translate tab closed errors gracefully', () => {

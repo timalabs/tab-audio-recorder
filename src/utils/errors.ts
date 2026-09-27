@@ -37,7 +37,7 @@ export function getFriendlyErrorMessage(error: unknown, url?: string): string {
       return 'Audio capture permission was denied by the browser.';
     }
     if (name.includes('notfounderror') || msg.includes('no audio')) {
-      return 'No active audio track was detected in this tab.';
+      return 'No active audio track detected on this tab.\n\nStart playing audio on this tab and try again.';
     }
     if (name.includes('notsupportederror') || msg.includes('notsupported')) {
       return 'Your browser does not support this recording format or API.';
