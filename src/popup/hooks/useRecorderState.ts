@@ -37,8 +37,9 @@ export function useRecorderState() {
         if (bgState.settings) {
           setSettingsState(bgState.settings);
         }
-        if (bgState.status === 'RECORDING' && bgState.startedAt) {
-          setLiveElapsedMs(Date.now() - bgState.startedAt);
+        if (bgState.status === 'RECORDING') {
+          const startTime = bgState.startedAt || (bgState.elapsedMs ? Date.now() - bgState.elapsedMs : Date.now());
+          setLiveElapsedMs(Math.max(0, Date.now() - startTime));
         } else {
           setLiveElapsedMs(bgState.elapsedMs || 0);
         }
@@ -58,8 +59,9 @@ export function useRecorderState() {
         if (msg.state.settings) {
           setSettingsState(msg.state.settings);
         }
-        if (msg.state.status === 'RECORDING' && msg.state.startedAt) {
-          setLiveElapsedMs(Date.now() - msg.state.startedAt);
+        if (msg.state.status === 'RECORDING') {
+          const startTime = msg.state.startedAt || (msg.state.elapsedMs ? Date.now() - msg.state.elapsedMs : Date.now());
+          setLiveElapsedMs(Math.max(0, Date.now() - startTime));
         } else {
           setLiveElapsedMs(msg.state.elapsedMs || 0);
         }
@@ -76,13 +78,12 @@ export function useRecorderState() {
   // Precise interval timer while in RECORDING state
   useEffect(() => {
     if (state.status === 'RECORDING') {
+      const startTime = state.startedAt || (state.elapsedMs ? Date.now() - state.elapsedMs : Date.now());
       const updateTimer = () => {
-        if (state.startedAt) {
-          setLiveElapsedMs(Math.max(0, Date.now() - state.startedAt));
-        }
+        setLiveElapsedMs(Math.max(0, Date.now() - startTime));
       };
       updateTimer();
-      timerRef.current = window.setInterval(updateTimer, 200);
+      timerRef.current = window.setInterval(updateTimer, 100);
     } else {
       if (timerRef.current !== null) {
         clearInterval(timerRef.current);
@@ -99,7 +100,7 @@ export function useRecorderState() {
         timerRef.current = null;
       }
     };
-  }, [state.status, state.startedAt]);
+  }, [state.status, state.startedAt, state.elapsedMs]);
 
   const updateSettings = useCallback(async (newSettings: Partial<RecorderSettings>) => {
     const updated = await saveSettings(newSettings);
@@ -137,6 +138,8 @@ export function useRecorderState() {
           status: 'ERROR',
           errorMessage: res.error || 'Failed to start recording.',
         }));
+      } else {
+        await syncState();
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -146,16 +149,17 @@ export function useRecorderState() {
         errorMessage: msg,
       }));
     }
-  }, [currentTab, settings]);
+  }, [currentTab, settings, syncState]);
 
   const stopRecording = useCallback(async () => {
     setState((prev) => ({ ...prev, status: 'STOPPING' }));
     try {
       await browserApi.sendMessage({ type: 'STOP_RECORDING' });
+      await syncState();
     } catch (err) {
       console.error('[useRecorderState] Error stopping recording:', err);
     }
-  }, []);
+  }, [syncState]);
 
   const resetRecording = useCallback(async () => {
     try {

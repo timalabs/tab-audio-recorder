@@ -38,6 +38,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
 
   if (message.type === 'STATE_CHANGED') {
     currentState = { ...message.state };
+    broadcastState(currentState);
     return;
   }
 

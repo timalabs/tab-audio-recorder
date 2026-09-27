@@ -37,7 +37,7 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
       aria-label={`Elapsed time: ${formatted}, status: ${label}`}
     >
       <span className="timer-text">
-        {isWaiting ? '--:--' : formatted}
+        {formatted}
       </span>
       <span className="timer-label">{label}</span>
     </div>

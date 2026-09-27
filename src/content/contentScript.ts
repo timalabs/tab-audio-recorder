@@ -97,6 +97,7 @@ async function handleStart(): Promise<void> {
           type: 'STATE_CHANGED',
           state: {
             status,
+            startedAt: status === 'RECORDING' ? Date.now() : undefined,
             elapsedMs: 0,
             tabInfo: currentTabInfo || undefined,
             settings: currentSettings,
