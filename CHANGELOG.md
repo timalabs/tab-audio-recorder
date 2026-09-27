@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.1] - 2026-09-27
+
+### Fixed
+- **Timer Stalling & Fallback Start Time**:
+  - Resolved an issue where the live recording timer could freeze at `00:00` if `startedAt` was omitted in background IPC state broadcasts.
+  - Added robust start timestamp fallback (`state.startedAt || Date.now()`) with smooth 100 ms interval ticking.
+  - Display standard digital time format (`00:00`) during waiting states rather than placeholder dashes (`--:--`).
+  - Added immediate state synchronization (`syncState()`) upon starting and stopping recording.
+- **Background State Re-broadcasting**:
+  - Ensured background service worker re-broadcasts all `STATE_CHANGED` messages received from offscreen documents and content scripts to active popup views.
+  - Added explicit `startedAt` timestamp to Firefox content script state messages.
+- **Auto-Start Audio Detection Pipeline**:
+  - Resolved browser autoplay policy suspension via proactive `AudioContext.resume()` in offscreen documents.
+  - Implemented 32-bit floating-point RMS detection with calibrated noise floor and 3 dB hysteresis margin.
+- **Auto-Start UX Simplification**:
+  - Standardized the primary idle button label to **"Start Recording"** regardless of whether Auto-start is enabled or disabled.
+  - Implemented clear state progression: `[ Start Recording ]` → `"Waiting for audio..."` → `"Audio detected"` → `"🔴 Recording"`.
+- **Clean UI & Logging**:
+  - Removed temporary developer diagnostics UI card and cleaned up verbose `console.log` messages for a clean production experience.
+- **Friendly Missing Track Guidance**:
+  - Improved error notification when no active audio track is present: clear prompt to start playback in the tab and try again.
+
+---
+
 ## [1.3.0] - 2026-09-27
 
 ### Added
