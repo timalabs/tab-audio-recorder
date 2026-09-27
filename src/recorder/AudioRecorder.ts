@@ -3,10 +3,11 @@ import { getSupportedMimeType, MimeTypeOption } from '../audio/mimeTypes.ts';
 import { trimAudioBlob } from '../audio/silenceTrimmer.ts';
 import { generateRecordingFilename } from '../utils/filename.ts';
 import { RecorderSettings } from '../utils/settings.ts';
-import { RecordingResult, RecordingStatus, TabInfo } from './RecorderState.ts';
+import { AutoStartDebugInfo, RecordingResult, RecordingStatus, TabInfo } from './RecorderState.ts';
 
 export interface AudioRecorderCallbacks {
-  onLevel?: (level: number) => void;
+  onLevel?: (level: number, db?: number, debugInfo?: AutoStartDebugInfo) => void;
+  onDebug?: (debugInfo: AutoStartDebugInfo) => void;
   onError?: (error: Error) => void;
   onComplete?: (result: RecordingResult) => void;
   onStatusChange?: (status: RecordingStatus) => void;
@@ -44,6 +45,25 @@ export class AudioRecorder {
     this.selectedMime = getSupportedMimeType();
     this.settings = settings;
 
+    // Log complete MediaStream track diagnostics
+    const tracks =
+      stream && typeof stream.getAudioTracks === 'function'
+        ? stream.getAudioTracks()
+        : [];
+    console.log('[AudioRecorder] MediaStream initialized:', {
+      streamActive: Boolean(stream?.active),
+      audioTracksCount: tracks.length,
+      trackReadyState: tracks[0]?.readyState,
+      trackEnabled: tracks[0]?.enabled,
+      trackMuted: tracks[0]?.muted,
+    });
+
+    tracks.forEach((track, idx) => {
+      track.onmute = () => console.warn(`[AudioRecorder] Track ${idx} MUTED`);
+      track.onunmute = () => console.log(`[AudioRecorder] Track ${idx} UNMUTED`);
+      track.onended = () => console.warn(`[AudioRecorder] Track ${idx} ENDED`);
+    });
+
     // Set up real-time audio analysis and tab audio pass-through
     this.analyzer = new AudioAnalyzer(stream, passThroughToSpeaker);
   }
@@ -56,21 +76,34 @@ export class AudioRecorder {
     return this.status;
   }
 
-  public start(): void {
+  public getDiagnostics(): AutoStartDebugInfo | undefined {
+    return this.analyzer?.getDiagnostics();
+  }
+
+  public async start(): Promise<void> {
     this.chunks = [];
     this.stoppedAt = 0;
     this.completedResult = null;
 
     if (this.settings?.autoStartRecording) {
-      this.setupAutoStartMode();
+      await this.setupAutoStartMode();
     } else {
       this.startMediaRecorder();
     }
   }
 
-  private setupAutoStartMode(): void {
+  private async setupAutoStartMode(): Promise<void> {
     this.status = 'WAITING_FOR_AUDIO';
     this.callbacks.onStatusChange?.('WAITING_FOR_AUDIO');
+
+    // Crucial: Ensure AudioContext is resumed and running
+    if (this.analyzer) {
+      await this.analyzer.ensureRunning();
+    }
+
+    if (!this.analyzer || this.status !== 'WAITING_FOR_AUDIO') {
+      return;
+    }
 
     const audioCtx = this.analyzer?.getAudioContext();
     const sourceNode = this.analyzer?.getSourceNode();
@@ -88,6 +121,7 @@ export class AudioRecorder {
         this.delayNode.connect(this.destinationNode);
 
         this.recordStream = this.destinationNode.stream;
+        console.log('[AudioRecorder] DelayNode pre-roll configured:', preRollSeconds, 'seconds');
       } catch (err) {
         console.warn('[AudioRecorder] Could not configure DelayNode pre-roll, falling back to direct stream:', err);
         this.recordStream = this.stream;
@@ -104,11 +138,14 @@ export class AudioRecorder {
         onAudioDetected: () => {
           this.handleAudioDetected();
         },
+        onDebug: (debugInfo) => {
+          this.callbacks.onDebug?.(debugInfo);
+        },
       });
 
-      this.analyzer.startMonitoring(50, (level) => {
+      this.analyzer.startMonitoring(50, (level, db, debugInfo) => {
         if (this.callbacks.onLevel) {
-          this.callbacks.onLevel(level);
+          this.callbacks.onLevel(level, db, debugInfo);
         }
       });
     }

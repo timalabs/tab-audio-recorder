@@ -43,6 +43,12 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
 
   if (message.type === 'AUDIO_LEVEL') {
     currentState.audioLevel = message.level;
+    if (message.db !== undefined) {
+      currentState.currentDb = message.db;
+    }
+    if (message.debugInfo) {
+      currentState.debugInfo = message.debugInfo;
+    }
     return;
   }
 

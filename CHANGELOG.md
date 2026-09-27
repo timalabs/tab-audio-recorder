@@ -10,12 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.0] - 2026-09-27
 
 ### Added
-- **Auto-Start Recording**:
+- **Auto-Start Recording Pipeline**:
   - Hands-free audio recording that monitors the captured tab audio level and automatically starts recording when meaningful sound is detected.
   - **Auto-start recording toggle (`ON / OFF`, default: OFF)**: Preserves existing manual workflow when OFF; enters audio monitoring mode when ON.
-  - **RMS / Decibel Detection**: Real-time time-domain analysis computing audio power in dB FS via `AnalyserNode`.
+  - **AudioContext Resumption**: Proactive `ensureRunning()` resumption prevents browser autoplay policies from stalling the audio rendering clock in Chrome MV3 offscreen documents and Firefox content scripts.
+  - **Zero-Gain Destination Bridge**: In Firefox, routes the audio through a `GainNode(gain = 0)` to `audioContext.destination`, ensuring the audio rendering thread continuously processes audio frames without generating double-audio or acoustic feedback.
+  - **32-Bit Float32Array RMS Detection**: High-precision time-domain signal power calculation ($20 \log_{10}(\text{RMS})$) with `fftSize = 2048` (42.6ms sampling window) and `smoothingTimeConstant = 0.1`.
   - **Transient Spike Rejection (Anti-False-Start)**: Requires sustained audio above the threshold for at least 400 ms (configurable) before triggering recording, eliminating false starts from clicks, pops, and short notification sounds.
+  - **3 dB Hysteresis Margin**: Prevents candidate detection state flutter when audio fluctuates near the threshold.
+  - **Ambient Baseline Calibration**: Measures ambient noise floor for 600 ms upon arming to establish a calibrated reference level.
   - **Web Audio Pre-Roll Delay Buffer**: Routes the recording stream through a Web Audio `DelayNode` (700 ms default, configurable) feeding into `MediaStreamAudioDestinationNode`. Ensures the initial transient attack, drum hit, or vocal intro is preserved without losing the first notes. Direct 0ms latency speaker pass-through is maintained so the tab plays without delay.
+  - **Live Audio Meter & Developer Diagnostics Panel**:
+    - Live decibel indicator (`Audio level: -18.4 dB` or `-∞ dB` when silent).
+    - Expandable diagnostic grid displaying Capture state, Audio tracks count/readyState/mute status, AudioContext lifecycle, Analyser status, RMS, current dB, threshold, Above-Threshold flag, Detection timer ms, Noise floor dB, and current recorder state.
   - **Advanced Settings Accordion**: Collapsible panel in the popup UI allowing fine-grained control:
     - Audio Detection Threshold (`-60 dB` to `-25 dB`, default: `-48 dB`)
     - Minimum Sound Duration (`100 ms` to `1200 ms`, default: `400 ms`)
@@ -24,16 +31,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Independent Background Monitoring**:
     - Runs in Chrome offscreen document and Firefox content script bridge; monitoring continues uninterrupted if the popup is closed.
     - Explicit `FORCE_RECORD` ("Record Now") and `Cancel Monitoring` controls during the `WAITING_FOR_AUDIO` state.
-  - **Dynamic Visual State & Metering**:
-    - Pulsing "Waiting for audio..." indicator and active real-time level visualizer while awaiting audio.
-    - "Audio detected! Starting..." status display during transition.
   - **Settings Persistence**:
     - Persists auto-start preference and advanced tuning in `chrome.storage.local` with fallback to `localStorage`.
 - **Comprehensive Documentation**:
   - Added `docs/auto-start.md` detailing Web Audio graph routing, DelayNode pre-roll mechanics, false-start state transitions, and manual verification guide.
+  - Added `docs/audio-processing.md` detailing the complete end-to-end audio pipeline across Chrome and Firefox.
 - **Expanded Test Suite**:
-  - Added `tests/autoStart.test.ts` with 7 unit tests verifying dB calculation, transient rejection, sustained trigger, pre-roll graph configuration, force start, cancellation, and settings persistence.
-  - Expanded total test suite to 78 passing tests across 10 test suites.
+  - Added comprehensive regression tests covering suspended AudioContext resumption, inactive MediaStream handling, quiet audio hysteresis, Float32Array RMS calculations, and silence rejection.
+  - Expanded total test suite to 82 passing tests across 10 test suites.
 
 ---
 

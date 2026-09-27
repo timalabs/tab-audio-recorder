@@ -220,7 +220,7 @@ describe('Auto-Start Audio Detection & Pre-roll Engine', () => {
     analyzer.cleanup();
   });
 
-  it('4. should configure DelayNode pre-roll and transition states in AudioRecorder', () => {
+  it('4. should configure DelayNode pre-roll and transition states in AudioRecorder', async () => {
     const mockTracks = [{ stop: vi.fn() }];
     const fakeStream = {
       getAudioTracks: vi.fn(() => mockTracks),
@@ -249,7 +249,7 @@ describe('Auto-Start Audio Detection & Pre-roll Engine', () => {
     expect(recorder.getStatus()).toBe('IDLE');
 
     // Start recorder in auto-start mode
-    recorder.start();
+    await recorder.start();
 
     // Should create DelayNode with 0.700s delay
     expect(mockAudioContext.createDelay).toHaveBeenCalled();
@@ -271,7 +271,7 @@ describe('Auto-Start Audio Detection & Pre-roll Engine', () => {
     recorder.cleanup();
   });
 
-  it('5. should allow manual forceStart() while WAITING_FOR_AUDIO', () => {
+  it('5. should allow manual forceStart() while WAITING_FOR_AUDIO', async () => {
     const mockTracks = [{ stop: vi.fn() }];
     const fakeStream = {
       getAudioTracks: vi.fn(() => mockTracks),
@@ -297,7 +297,7 @@ describe('Auto-Start Audio Detection & Pre-roll Engine', () => {
       }
     );
 
-    recorder.start();
+    await recorder.start();
     expect(recorder.getStatus()).toBe('WAITING_FOR_AUDIO');
 
     // User clicks Record Now without waiting
@@ -330,7 +330,7 @@ describe('Auto-Start Audio Detection & Pre-roll Engine', () => {
       }
     );
 
-    recorder.start();
+    await recorder.start();
     expect(recorder.getStatus()).toBe('WAITING_FOR_AUDIO');
 
     // User clicks Cancel Monitoring
@@ -374,5 +374,105 @@ describe('Auto-Start Audio Detection & Pre-roll Engine', () => {
     expect(updated.autoStartThresholdDb).toBe(-52);
     expect(updated.autoStartMinSoundDurationMs).toBe(500);
     expect(updated.autoStartPreRollMs).toBe(800);
+  });
+
+  it('8. should resume AudioContext when suspended in ensureRunning()', async () => {
+    let contextState = 'suspended';
+    const suspendedContext = {
+      ...mockAudioContext,
+      get state() {
+        return contextState;
+      },
+      resume: vi.fn(async () => {
+        contextState = 'running';
+      }),
+    };
+    (globalThis as unknown as { AudioContext: unknown }).AudioContext = vi.fn(
+      () => suspendedContext
+    );
+
+    const fakeStream = {} as MediaStream;
+    const analyzer = new AudioAnalyzer(fakeStream, false);
+    contextState = 'suspended';
+    expect(analyzer.getAudioContext()?.state).toBe('suspended');
+
+    const running = await analyzer.ensureRunning();
+    expect(running).toBe(true);
+    expect(suspendedContext.resume).toHaveBeenCalled();
+    expect(analyzer.getAudioContext()?.state).toBe('running');
+
+    analyzer.cleanup();
+  });
+
+  it('9. should handle missing audio track and inactive MediaStream gracefully in diagnostics', () => {
+    const inactiveStream = {
+      active: false,
+      getAudioTracks: vi.fn(() => []),
+    } as unknown as MediaStream;
+
+    const analyzer = new AudioAnalyzer(inactiveStream, false);
+    const diag = analyzer.getDiagnostics();
+
+    expect(diag.streamExists).toBe(true);
+    expect(diag.streamActive).toBe(false);
+    expect(diag.audioTracksCount).toBe(0);
+    expect(diag.trackReadyState).toBe('none');
+    expect(diag.trackEnabled).toBe(false);
+    expect(diag.trackMuted).toBe(false);
+
+    analyzer.cleanup();
+  });
+
+  it('10. should maintain candidate detection across quiet audio dips via hysteresis margin', () => {
+    const fakeStream = {} as MediaStream;
+    const analyzer = new AudioAnalyzer(fakeStream, false);
+    const onDetected = vi.fn();
+
+    analyzer.configureAutoStartDetection({
+      thresholdDb: -48,
+      minSoundDurationMs: 400,
+      onAudioDetected: onDetected,
+    });
+
+    vi.useFakeTimers();
+    analyzer.startMonitoring(50);
+
+    // Initial audio above threshold (-46 dB)
+    mockTimeDomainSampleValue = 129;
+    vi.advanceTimersByTime(200);
+
+    // Momentary slight dip down to -50 dB (above release threshold -51 dB)
+    // Hysteresis allows this without resetting timer!
+    vi.advanceTimersByTime(250);
+
+    expect(onDetected).toHaveBeenCalledTimes(1);
+
+    analyzer.cleanup();
+  });
+
+  it('11. should remain in WAITING_FOR_AUDIO indefinitely during silence (-100 dB)', () => {
+    const fakeStream = {} as MediaStream;
+    const analyzer = new AudioAnalyzer(fakeStream, false);
+    const onDetected = vi.fn();
+
+    analyzer.configureAutoStartDetection({
+      thresholdDb: -48,
+      minSoundDurationMs: 400,
+      onAudioDetected: onDetected,
+    });
+
+    vi.useFakeTimers();
+    analyzer.startMonitoring(50);
+
+    // Pure silence: 128
+    mockTimeDomainSampleValue = 128;
+    vi.advanceTimersByTime(5000);
+
+    expect(onDetected).not.toHaveBeenCalled();
+    const diag = analyzer.getDiagnostics();
+    expect(diag.aboveThreshold).toBe(false);
+    expect(diag.detectionTimerMs).toBe(0);
+
+    analyzer.cleanup();
   });
 });

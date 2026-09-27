@@ -1,5 +1,11 @@
 import { AudioRecorder } from '../recorder/AudioRecorder.ts';
-import { ExtensionMessage, INITIAL_RECORDER_STATE, RecorderState, RecordingResult } from '../recorder/RecorderState.ts';
+import {
+  AutoStartDebugInfo,
+  ExtensionMessage,
+  INITIAL_RECORDER_STATE,
+  RecorderState,
+  RecordingResult,
+} from '../recorder/RecorderState.ts';
 import { getFriendlyErrorMessage } from '../utils/errors.ts';
 
 let activeRecorder: AudioRecorder | null = null;
@@ -19,12 +25,20 @@ function broadcastState(state: RecorderState): void {
   }
 }
 
-function broadcastAudioLevel(level: number): void {
+function broadcastAudioLevel(level: number, db?: number, debugInfo?: AutoStartDebugInfo): void {
   currentState.audioLevel = level;
+  if (db !== undefined) {
+    currentState.currentDb = db;
+  }
+  if (debugInfo) {
+    currentState.debugInfo = debugInfo;
+  }
   try {
     chrome.runtime.sendMessage({
       type: 'AUDIO_LEVEL',
       level,
+      db,
+      debugInfo,
     }).catch(() => {
       // Ignored if popup is closed
     });
@@ -37,6 +51,9 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
   if (message.type === 'GET_STATE') {
     if (currentState.status === 'RECORDING' && activeRecorder) {
       currentState.elapsedMs = activeRecorder.getDurationMs();
+    }
+    if (activeRecorder) {
+      currentState.debugInfo = activeRecorder.getDiagnostics();
     }
     sendResponse(currentState);
     return true;
@@ -134,7 +151,16 @@ async function handleStartRecording(
     video: false,
   });
 
-  if (!mediaStream.getAudioTracks().length) {
+  const tracks = mediaStream.getAudioTracks();
+  console.log('[Offscreen] Captured tab MediaStream:', {
+    active: mediaStream.active,
+    audioTracksCount: tracks.length,
+    trackReadyState: tracks[0]?.readyState,
+    trackEnabled: tracks[0]?.enabled,
+    trackMuted: tracks[0]?.muted,
+  });
+
+  if (!tracks.length) {
     throw new Error('No audio tracks captured from tab');
   }
 
@@ -142,7 +168,10 @@ async function handleStartRecording(
     mediaStream,
     tabInfo,
     {
-      onLevel: (level) => broadcastAudioLevel(level),
+      onLevel: (level, db, debugInfo) => broadcastAudioLevel(level, db, debugInfo),
+      onDebug: (debugInfo) => {
+        currentState.debugInfo = debugInfo;
+      },
       onStatusChange: (status) => {
         currentState.status = status;
         if (status === 'RECORDING') {
@@ -175,7 +204,7 @@ async function handleStartRecording(
     settings
   );
 
-  activeRecorder.start();
+  await activeRecorder.start();
 
   const finalStatus = activeRecorder.getStatus();
   broadcastState({
@@ -184,6 +213,7 @@ async function handleStartRecording(
     elapsedMs: 0,
     tabInfo,
     settings: currentState.settings,
+    debugInfo: activeRecorder.getDiagnostics(),
   });
 }
 

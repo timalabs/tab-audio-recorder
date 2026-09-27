@@ -32,6 +32,24 @@ export interface RecordingResult {
   trimmed?: boolean;
 }
 
+export interface AutoStartDebugInfo {
+  streamExists: boolean;
+  streamActive: boolean;
+  audioTracksCount: number;
+  trackReadyState: string;
+  trackEnabled: boolean;
+  trackMuted: boolean;
+  audioContextState: string;
+  analyserActive: boolean;
+  rms: number;
+  db: number;
+  thresholdDb: number;
+  aboveThreshold: boolean;
+  detectionTimerMs: number;
+  noiseFloorDb?: number;
+  isCalibrating?: boolean;
+}
+
 export interface RecorderState {
   status: RecordingStatus;
   startedAt?: number;
@@ -40,6 +58,8 @@ export interface RecorderState {
   result?: RecordingResult;
   errorMessage?: string;
   audioLevel?: number; // 0.0 to 1.0 (for instant level indicator)
+  currentDb?: number; // Real-time volume in dB FS
+  debugInfo?: AutoStartDebugInfo;
   settings?: RecorderSettings;
 }
 
@@ -49,7 +69,7 @@ export type ExtensionMessage =
   | { type: 'RESET_RECORDING' }
   | { type: 'GET_STATE' }
   | { type: 'STATE_CHANGED'; state: RecorderState }
-  | { type: 'AUDIO_LEVEL'; level: number }
+  | { type: 'AUDIO_LEVEL'; level: number; db?: number; debugInfo?: AutoStartDebugInfo }
   | { type: 'DOWNLOAD_RECORDING' }
   | { type: 'UPDATE_SETTINGS'; settings: RecorderSettings }
   | { type: 'FORCE_RECORD' }

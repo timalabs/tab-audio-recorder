@@ -84,10 +84,12 @@ async function handleStart(): Promise<void> {
     stream,
     currentTabInfo || undefined,
     {
-      onLevel: (level) => {
+      onLevel: (level, db, debugInfo) => {
         chrome.runtime.sendMessage({
           type: 'AUDIO_LEVEL',
           level,
+          db,
+          debugInfo,
         }).catch(() => {});
       },
       onStatusChange: (status) => {
@@ -98,6 +100,7 @@ async function handleStart(): Promise<void> {
             elapsedMs: 0,
             tabInfo: currentTabInfo || undefined,
             settings: currentSettings,
+            debugInfo: contentRecorder?.getDiagnostics(),
           },
         }).catch(() => {});
       },
@@ -112,7 +115,7 @@ async function handleStart(): Promise<void> {
     currentSettings
   );
 
-  contentRecorder.start();
+  await contentRecorder.start();
 }
 
 async function handleStop(): Promise<RecordingResult> {

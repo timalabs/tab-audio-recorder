@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { browserApi } from '../../platform/browser.ts';
 import {
+  AutoStartDebugInfo,
   ExtensionMessage,
   INITIAL_RECORDER_STATE,
   RecorderState,
@@ -14,6 +15,8 @@ export function useRecorderState() {
   const [currentTab, setCurrentTab] = useState<TabInfo | null>(null);
   const [liveElapsedMs, setLiveElapsedMs] = useState<number>(0);
   const [audioLevel, setAudioLevel] = useState<number>(0);
+  const [currentDb, setCurrentDb] = useState<number | undefined>(undefined);
+  const [debugInfo, setDebugInfo] = useState<AutoStartDebugInfo | undefined>(undefined);
   const [settings, setSettingsState] = useState<RecorderSettings>({ ...DEFAULT_SETTINGS });
   const timerRef = useRef<number | null>(null);
 
@@ -37,6 +40,12 @@ export function useRecorderState() {
         if (bgState.settings) {
           setSettingsState(bgState.settings);
         }
+        if (bgState.currentDb !== undefined) {
+          setCurrentDb(bgState.currentDb);
+        }
+        if (bgState.debugInfo) {
+          setDebugInfo(bgState.debugInfo);
+        }
         if (bgState.status === 'RECORDING' && bgState.startedAt) {
           setLiveElapsedMs(Date.now() - bgState.startedAt);
         } else {
@@ -58,6 +67,12 @@ export function useRecorderState() {
         if (msg.state.settings) {
           setSettingsState(msg.state.settings);
         }
+        if (msg.state.currentDb !== undefined) {
+          setCurrentDb(msg.state.currentDb);
+        }
+        if (msg.state.debugInfo) {
+          setDebugInfo(msg.state.debugInfo);
+        }
         if (msg.state.status === 'RECORDING' && msg.state.startedAt) {
           setLiveElapsedMs(Date.now() - msg.state.startedAt);
         } else {
@@ -65,6 +80,12 @@ export function useRecorderState() {
         }
       } else if (msg.type === 'AUDIO_LEVEL') {
         setAudioLevel(msg.level);
+        if (msg.db !== undefined) {
+          setCurrentDb(msg.db);
+        }
+        if (msg.debugInfo) {
+          setDebugInfo(msg.debugInfo);
+        }
       }
     });
 
@@ -88,7 +109,10 @@ export function useRecorderState() {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      setAudioLevel(0);
+      if (state.status !== 'WAITING_FOR_AUDIO' && state.status !== 'AUDIO_DETECTED') {
+        setAudioLevel(0);
+        setCurrentDb(undefined);
+      }
     }
 
     return () => {
@@ -187,6 +211,8 @@ export function useRecorderState() {
     currentTab,
     liveElapsedMs,
     audioLevel,
+    currentDb,
+    debugInfo,
     settings,
     updateSettings,
     startRecording,

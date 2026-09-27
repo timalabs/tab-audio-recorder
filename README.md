@@ -14,7 +14,7 @@ No server. No account. No audio uploads.
 [![Chrome MV3](https://img.shields.io/badge/Chrome-Manifest%20V3-blue)](dist/chrome)
 [![Firefox WebExtension](https://img.shields.io/badge/Firefox-WebExtension-orange)](dist/firefox)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](tsconfig.json)
-[![Tests Passing](https://img.shields.io/badge/Tests-78%2F78%20Passed-success)](tests)
+[![Tests Passing](https://img.shields.io/badge/Tests-82%2F82%20Passed-success)](tests)
 
 ---
 
@@ -51,7 +51,9 @@ Browser Tab
     ↓
 Audio Capture (tabCapture / captureStream)
     ↓
-Local Recording (In-Memory PCM / WebM)
+AudioContext Resumption & 32-bit Float RMS Analyser
+    ↓
+Local Recording (In-Memory PCM / WebM with 700ms Pre-Roll)
     ↓
 Smart Silence Trim (Optional Safe Window)
     ↓
@@ -60,7 +62,7 @@ Format Conversion (MP3 / WAV / FLAC / OGG / WebM)
 Local Download (Your Downloads Folder)
 ```
 
-The extension captures audio from the active browser tab, processes it locally, optionally removes unwanted silence at the beginning and end, converts the recording into the selected format, and saves the result locally.
+The extension captures audio from the active browser tab, processes it locally, optionally removes unwanted silence at the beginning and end, converts the recording into the selected format, and saves the result locally. See [docs/audio-processing.md](docs/audio-processing.md) for full pipeline specifications.
 
 ---
 
@@ -136,11 +138,11 @@ Tab Audio Recorder can automatically start recording when sound begins playing i
 ```text
 User Arms Recorder (Waiting for audio...)
                 ↓
-Tab Audio Level Monitored via AnalyserNode (RMS / dB)
+AudioContext Resumed & Monitored via AnalyserNode (Float32Array RMS / dB)
                 ↓
 Transient Spike? (< 400ms click/beep)  ──► Discarded (False-start rejected)
                 ↓
-Sustained Audio (≥ 400ms above threshold)
+Sustained Audio (≥ 400ms above threshold with 3 dB hysteresis)
                 ↓
 Auto-Start Triggered!
 Pre-Roll Delay Buffer (700ms) captured seamlessly
@@ -149,8 +151,11 @@ Recording Active (0ms of track beginning lost)
 ```
 
 * **Hands-Free Detection**: When **Auto-start recording** is toggled ON, the extension enters `WAITING_FOR_AUDIO` mode. It continuously monitors tab audio levels without recording silence.
+* **Live Audio Meter & Diagnostics**: Real-time decibel level (`Audio level: -18.4 dB` or `-∞ dB`) and an expandable **Diagnostics** panel showing stream state, track state, AudioContext state, 32-bit RMS energy, current dB, and threshold status.
 * **Transient Spike Rejection**: Sound must remain continuously above the volume threshold for at least 400 ms (configurable) to trigger recording. Short clicks, UI pops, and system chimes are discarded.
+* **3 dB Hysteresis**: Prevents candidate detection state flutter when audio fluctuates near the threshold.
 * **Pre-Roll Delay Buffer**: Built-in 700 ms (configurable) Web Audio delay buffer ensures the very first drum hit, guitar pluck, or vocal attack is preserved in the recording.
+* **Ambient Calibration**: Automatically measures ambient tab noise during the first 600ms of monitoring to establish an accurate baseline.
 * **Advanced Settings**: Fine-tune detection parameters in the collapsible Advanced settings panel:
   * **Audio Threshold**: `-60 dB` (ultra-sensitive) to `-25 dB` (loud audio only, default: `-48 dB`).
   * **Min Sound Duration**: `100 ms` to `1200 ms` (default: `400 ms`).
