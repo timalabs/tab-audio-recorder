@@ -19,7 +19,7 @@ We are committed to providing a friendly, safe, and welcoming environment for al
 ### 2. Setup
 Clone the repository and install dependencies:
 ```bash
-git clone https://github.com/your-username/tab-audio-recorder.git
+git clone https://github.com/timalabs/tab-audio-recorder.git
 cd tab-audio-recorder
 npm install
 ```

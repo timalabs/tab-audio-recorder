@@ -8,9 +8,18 @@
     "build": "node scripts/build.mjs",
     "build:chrome": "node scripts/build.mjs --target=chrome",
     "build:firefox": "node scripts/build.mjs --target=firefox",
+    "package": "node scripts/package.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ tests/",
     "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/timalabs/tab-audio-recorder.git"
+  },
+  "homepage": "https://github.com/timalabs/tab-audio-recorder#readme",
+  "bugs": {
+    "url": "https://github.com/timalabs/tab-audio-recorder/issues"
   },
   "keywords": [
     "browser-extension",
@@ -21,7 +30,7 @@
     "media-recorder",
     "webaudio"
   ],
-  "author": "Tab Audio Recorder Contributors",
+  "author": "timalabs",
   "license": "MIT",
   "dependencies": {
     "lucide-react": "^0.475.0",
@@ -30,6 +39,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
+    "@types/archiver": "^6.0.3",
     "@types/chrome": "^0.0.306",
     "@types/node": "^22.13.4",
     "@types/react": "^19.0.8",
@@ -37,6 +47,7 @@
     "@typescript-eslint/eslint-plugin": "^8.24.0",
     "@typescript-eslint/parser": "^8.24.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "archiver": "^7.0.1",
     "eslint": "^9.20.0",
     "typescript": "^5.7.3",
     "vite": "^6.1.0",
