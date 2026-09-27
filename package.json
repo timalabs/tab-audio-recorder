@@ -1,0 +1,45 @@
+{
+  "name": "tab-audio-recorder",
+  "version": "1.0.0",
+  "description": "Production-quality cross-browser extension to record audio from browser tabs privately and locally.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/build.mjs",
+    "build:chrome": "node scripts/build.mjs --target=chrome",
+    "build:firefox": "node scripts/build.mjs --target=firefox",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/ tests/",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "browser-extension",
+    "audio-recorder",
+    "chrome-extension",
+    "firefox-addon",
+    "tab-capture",
+    "media-recorder",
+    "webaudio"
+  ],
+  "author": "Tab Audio Recorder Contributors",
+  "license": "MIT",
+  "dependencies": {
+    "lucide-react": "^0.475.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@types/chrome": "^0.0.306",
+    "@types/node": "^22.13.4",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.24.0",
+    "@typescript-eslint/parser": "^8.24.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.20.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0",
+    "vitest": "^3.0.5"
+  }
+}
