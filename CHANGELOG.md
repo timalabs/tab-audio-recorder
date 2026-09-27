@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-09-27
+
+### Added
+- **Auto-Start Recording**:
+  - Hands-free audio recording that monitors the captured tab audio level and automatically starts recording when meaningful sound is detected.
+  - **Auto-start recording toggle (`ON / OFF`, default: OFF)**: Preserves existing manual workflow when OFF; enters audio monitoring mode when ON.
+  - **RMS / Decibel Detection**: Real-time time-domain analysis computing audio power in dB FS via `AnalyserNode`.
+  - **Transient Spike Rejection (Anti-False-Start)**: Requires sustained audio above the threshold for at least 400 ms (configurable) before triggering recording, eliminating false starts from clicks, pops, and short notification sounds.
+  - **Web Audio Pre-Roll Delay Buffer**: Routes the recording stream through a Web Audio `DelayNode` (700 ms default, configurable) feeding into `MediaStreamAudioDestinationNode`. Ensures the initial transient attack, drum hit, or vocal intro is preserved without losing the first notes. Direct 0ms latency speaker pass-through is maintained so the tab plays without delay.
+  - **Advanced Settings Accordion**: Collapsible panel in the popup UI allowing fine-grained control:
+    - Audio Detection Threshold (`-60 dB` to `-25 dB`, default: `-48 dB`)
+    - Minimum Sound Duration (`100 ms` to `1200 ms`, default: `400 ms`)
+    - Pre-roll Delay Buffer (`200 ms` to `1500 ms`, default: `700 ms`)
+    - Reset to Defaults button
+  - **Independent Background Monitoring**:
+    - Runs in Chrome offscreen document and Firefox content script bridge; monitoring continues uninterrupted if the popup is closed.
+    - Explicit `FORCE_RECORD` ("Record Now") and `Cancel Monitoring` controls during the `WAITING_FOR_AUDIO` state.
+  - **Dynamic Visual State & Metering**:
+    - Pulsing "Waiting for audio..." indicator and active real-time level visualizer while awaiting audio.
+    - "Audio detected! Starting..." status display during transition.
+  - **Settings Persistence**:
+    - Persists auto-start preference and advanced tuning in `chrome.storage.local` with fallback to `localStorage`.
+- **Comprehensive Documentation**:
+  - Added `docs/auto-start.md` detailing Web Audio graph routing, DelayNode pre-roll mechanics, false-start state transitions, and manual verification guide.
+- **Expanded Test Suite**:
+  - Added `tests/autoStart.test.ts` with 7 unit tests verifying dB calculation, transient rejection, sustained trigger, pre-roll graph configuration, force start, cancellation, and settings persistence.
+  - Expanded total test suite to 78 passing tests across 10 test suites.
+
+---
+
 ## [1.2.0] - 2026-09-27
 
 ### Added

@@ -2,6 +2,8 @@ import { RecorderSettings } from '../utils/settings.ts';
 
 export type RecordingStatus =
   | 'IDLE'
+  | 'WAITING_FOR_AUDIO'
+  | 'AUDIO_DETECTED'
   | 'STARTING'
   | 'RECORDING'
   | 'STOPPING'
@@ -50,6 +52,7 @@ export type ExtensionMessage =
   | { type: 'AUDIO_LEVEL'; level: number }
   | { type: 'DOWNLOAD_RECORDING' }
   | { type: 'UPDATE_SETTINGS'; settings: RecorderSettings }
+  | { type: 'FORCE_RECORD' }
   // Chrome offscreen messaging:
   | {
       type: 'INIT_CHROME_OFFSCREEN_CAPTURE';

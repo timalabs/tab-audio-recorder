@@ -55,6 +55,14 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
     return true;
   }
 
+  if (message.type === 'FORCE_RECORD') {
+    if (browserApi.isChrome() || typeof chrome.tabCapture !== 'undefined') {
+      chrome.runtime.sendMessage(message).catch(() => {});
+    }
+    sendResponse({ success: true });
+    return true;
+  }
+
   if (message.type === 'START_RECORDING') {
     handleStartRecording(message.tabId, message.settings)
       .then(() => sendResponse({ success: true }))
@@ -193,9 +201,10 @@ async function handleStartRecording(
       );
     });
 
+    const isAutoStart = Boolean(currentState.settings?.autoStartRecording);
     currentState = {
-      status: 'RECORDING',
-      startedAt: Date.now(),
+      status: isAutoStart ? 'WAITING_FOR_AUDIO' : 'RECORDING',
+      startedAt: isAutoStart ? undefined : Date.now(),
       elapsedMs: 0,
       tabInfo,
       settings: currentState.settings,
@@ -207,9 +216,10 @@ async function handleStartRecording(
   // Firefox / standard WebExtension flow using content script
   await startFirefoxTabRecording(tabId, tabInfo, currentState.settings);
 
+  const isAutoStartFf = Boolean(currentState.settings?.autoStartRecording);
   currentState = {
-    status: 'RECORDING',
-    startedAt: Date.now(),
+    status: isAutoStartFf ? 'WAITING_FOR_AUDIO' : 'RECORDING',
+    startedAt: isAutoStartFf ? undefined : Date.now(),
     elapsedMs: 0,
     tabInfo,
     settings: currentState.settings,

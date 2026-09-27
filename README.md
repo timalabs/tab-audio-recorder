@@ -14,7 +14,7 @@ No server. No account. No audio uploads.
 [![Chrome MV3](https://img.shields.io/badge/Chrome-Manifest%20V3-blue)](dist/chrome)
 [![Firefox WebExtension](https://img.shields.io/badge/Firefox-WebExtension-orange)](dist/firefox)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](tsconfig.json)
-[![Tests Passing](https://img.shields.io/badge/Tests-71%2F71%20Passed-success)](tests)
+[![Tests Passing](https://img.shields.io/badge/Tests-78%2F78%20Passed-success)](tests)
 
 ---
 
@@ -29,6 +29,7 @@ The project is designed as a privacy-first, general-purpose browser audio record
 ## Features
 
 * 🎙 **Record audio from the active browser tab**: Capture any sound playing in your Chrome or Firefox tab with a single click.
+* ⚡ **Auto-start recording**: Automatically monitors tab audio level and begins recording hands-free when meaningful sound begins, with pre-roll protection.
 * 🌐 **Chrome and Firefox support**: Native Manifest V3 tab capture on Chrome and media stream capture on Firefox.
 * ✂️ **Smart leading/trailing silence trimming**: Automatically detect and slice unwanted silence before and after the track.
 * ⏱ **Optional track duration protection**: Safe window ensures internal silence inside the track is preserved.
@@ -128,6 +129,36 @@ If audio is playing in the browser tab, the extension can capture the tab's audi
 
 ---
 
+## Auto-start Recording
+
+Tab Audio Recorder can automatically start recording when sound begins playing in the tab, allowing completely hands-free operation. See [docs/auto-start.md](docs/auto-start.md) for architecture details, Web Audio routing, and false-start rejection mechanics.
+
+```text
+User Arms Recorder (Waiting for audio...)
+                ↓
+Tab Audio Level Monitored via AnalyserNode (RMS / dB)
+                ↓
+Transient Spike? (< 400ms click/beep)  ──► Discarded (False-start rejected)
+                ↓
+Sustained Audio (≥ 400ms above threshold)
+                ↓
+Auto-Start Triggered!
+Pre-Roll Delay Buffer (700ms) captured seamlessly
+                ↓
+Recording Active (0ms of track beginning lost)
+```
+
+* **Hands-Free Detection**: When **Auto-start recording** is toggled ON, the extension enters `WAITING_FOR_AUDIO` mode. It continuously monitors tab audio levels without recording silence.
+* **Transient Spike Rejection**: Sound must remain continuously above the volume threshold for at least 400 ms (configurable) to trigger recording. Short clicks, UI pops, and system chimes are discarded.
+* **Pre-Roll Delay Buffer**: Built-in 700 ms (configurable) Web Audio delay buffer ensures the very first drum hit, guitar pluck, or vocal attack is preserved in the recording.
+* **Advanced Settings**: Fine-tune detection parameters in the collapsible Advanced settings panel:
+  * **Audio Threshold**: `-60 dB` (ultra-sensitive) to `-25 dB` (loud audio only, default: `-48 dB`).
+  * **Min Sound Duration**: `100 ms` to `1200 ms` (default: `400 ms`).
+  * **Pre-roll Buffer**: `200 ms` to `1500 ms` (default: `700 ms`).
+* **Strict Independence**: Auto-start only initiates recording. Recording continues until you click Stop or cancel monitoring. Smart Silence Trimming and format conversion work seamlessly with auto-started recordings.
+
+---
+
 ## Smart Silence Trimming
 
 Smart Silence Trimming automatically removes unwanted silence from the beginning and end of recordings while preserving intentional pauses inside the track. See [docs/smart-trim.md](docs/smart-trim.md) for full technical documentation.
@@ -201,7 +232,7 @@ The extension is **not** designed to bypass:
 Download the latest pre-built packages from [**GitHub Releases**](https://github.com/timalabs/tab-audio-recorder/releases).
 
 ### For Google Chrome / Brave / Microsoft Edge:
-1. Download `tab-audio-recorder-chrome-v1.2.0.zip` from the [latest release](https://github.com/timalabs/tab-audio-recorder/releases).
+1. Download `tab-audio-recorder-chrome-v1.3.0.zip` from the [latest release](https://github.com/timalabs/tab-audio-recorder/releases).
 2. Unzip the file into a folder on your computer.
 3. Open `chrome://extensions/` in your browser.
 4. Enable **Developer mode** (toggle in the top-right corner).
@@ -209,7 +240,7 @@ Download the latest pre-built packages from [**GitHub Releases**](https://github
 6. Pin **Tab Audio Recorder** to your toolbar.
 
 ### For Mozilla Firefox:
-1. Download `tab-audio-recorder-firefox-v1.2.0.xpi` (or `.zip`).
+1. Download `tab-audio-recorder-firefox-v1.3.0.xpi` (or `.zip`).
 2. Open `about:debugging#/runtime/this-firefox` in Firefox.
 3. Click **Load Temporary Add-on...**.
 4. Select the downloaded `.xpi` (or `manifest.json` from the unzipped archive).

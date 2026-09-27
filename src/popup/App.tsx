@@ -22,6 +22,7 @@ export const App: React.FC = () => {
     stopRecording,
     resetRecording,
     downloadRecording,
+    forceRecord,
   } = useRecorderState();
 
   const isCompleted = state.status === 'COMPLETED';
@@ -29,7 +30,9 @@ export const App: React.FC = () => {
   const isRecordingActive =
     state.status === 'RECORDING' ||
     state.status === 'STARTING' ||
-    state.status === 'STOPPING';
+    state.status === 'STOPPING' ||
+    state.status === 'WAITING_FOR_AUDIO' ||
+    state.status === 'AUDIO_DETECTED';
 
   return (
     <div className="popup-container">
@@ -61,10 +64,15 @@ export const App: React.FC = () => {
             <TimerDisplay
               elapsedMs={liveElapsedMs}
               isRecording={state.status === 'RECORDING'}
+              status={state.status}
             />
             <AudioVisualizer
               level={audioLevel}
-              active={state.status === 'RECORDING'}
+              active={
+                state.status === 'RECORDING' ||
+                state.status === 'WAITING_FOR_AUDIO' ||
+                state.status === 'AUDIO_DETECTED'
+              }
             />
           </div>
 
@@ -76,8 +84,10 @@ export const App: React.FC = () => {
 
           <RecordingControls
             status={state.status}
+            autoStartEnabled={settings.autoStartRecording}
             onStart={startRecording}
             onStop={stopRecording}
+            onForceRecord={forceRecord}
           />
         </>
       )}

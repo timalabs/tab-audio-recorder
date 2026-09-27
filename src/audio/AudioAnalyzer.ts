@@ -4,21 +4,33 @@ export interface SilenceConfig {
   onSilence: () => void;
 }
 
+export interface AutoStartDetectorConfig {
+  thresholdDb: number; // Volume threshold in dB (-60 to -20 dB, default: -48 dB)
+  minSoundDurationMs: number; // Sustained duration required before triggering (default: 400 ms)
+  onAudioDetected: () => void;
+  onLevel?: (level: number, db: number) => void;
+}
+
 export class AudioAnalyzer {
   private audioContext: AudioContext | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
   private analyserNode: AnalyserNode | null = null;
-  private dataArray: Uint8Array<ArrayBuffer> | null = null;
+  private freqDataArray: Uint8Array<ArrayBuffer> | null = null;
+  private timeDataArray: Uint8Array<ArrayBuffer> | null = null;
   private monitorTimer: ReturnType<typeof setInterval> | null = null;
   private silenceConfig: SilenceConfig | null = null;
   private silenceStartTimestamp: number | null = null;
+  private autoStartConfig: AutoStartDetectorConfig | null = null;
+  private soundStartTimestamp: number | null = null;
 
   constructor(stream: MediaStream, routeToSpeaker: boolean = true) {
     try {
       const AudioCtx =
         (typeof window !== 'undefined' ? window.AudioContext : null) ||
         (globalThis as unknown as { AudioContext: typeof AudioContext }).AudioContext ||
-        (typeof window !== 'undefined' ? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext : null);
+        (typeof window !== 'undefined'
+          ? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+          : null);
 
       if (!AudioCtx) {
         console.warn('[AudioAnalyzer] AudioContext is not supported in this environment');
@@ -38,24 +50,33 @@ export class AudioAnalyzer {
         this.analyserNode.connect(this.audioContext.destination);
       }
 
-      this.dataArray = new Uint8Array(new ArrayBuffer(this.analyserNode.frequencyBinCount));
+      this.freqDataArray = new Uint8Array(new ArrayBuffer(this.analyserNode.frequencyBinCount));
+      this.timeDataArray = new Uint8Array(new ArrayBuffer(this.analyserNode.fftSize));
     } catch (err) {
       console.warn('[AudioAnalyzer] Could not initialize Web Audio graph:', err);
     }
+  }
+
+  public getAudioContext(): AudioContext | null {
+    return this.audioContext;
+  }
+
+  public getSourceNode(): MediaStreamAudioSourceNode | null {
+    return this.sourceNode;
   }
 
   /**
    * Calculates the current root-mean-square (RMS) level normalized to [0, 1].
    */
   public getLevel(): number {
-    if (!this.analyserNode || !this.dataArray) return 0;
+    if (!this.analyserNode || !this.freqDataArray) return 0;
 
-    this.analyserNode.getByteFrequencyData(this.dataArray);
+    this.analyserNode.getByteFrequencyData(this.freqDataArray);
 
     let sum = 0;
-    const length = this.dataArray.length;
+    const length = this.freqDataArray.length;
     for (let i = 0; i < length; i++) {
-      sum += this.dataArray[i];
+      sum += this.freqDataArray[i];
     }
 
     const average = sum / length;
@@ -65,19 +86,57 @@ export class AudioAnalyzer {
   }
 
   /**
+   * Computes the current real-time audio volume in decibels (dB FS).
+   * Returns -100 for absolute silence or unavailable analyser.
+   */
+  public getDecibels(): number {
+    if (
+      !this.analyserNode ||
+      !this.timeDataArray ||
+      typeof this.analyserNode.getByteTimeDomainData !== 'function'
+    ) {
+      const level = this.getLevel();
+      if (level <= 0.001) return -100;
+      return Math.round(20 * Math.log10(level));
+    }
+
+    this.analyserNode.getByteTimeDomainData(this.timeDataArray);
+
+    let sumSquares = 0;
+    const length = this.timeDataArray.length;
+    for (let i = 0; i < length; i++) {
+      // Map 0..255 to -1.0..1.0
+      const sample = (this.timeDataArray[i] - 128) / 128;
+      sumSquares += sample * sample;
+    }
+
+    const rms = Math.sqrt(sumSquares / length);
+    if (rms < 0.00001) return -100;
+
+    const db = 20 * Math.log10(rms);
+    return Math.round(db);
+  }
+
+  /**
    * Starts periodic audio level polling. Throttled to conserve CPU.
    */
   public startMonitoring(
-    intervalMs: number = 80,
+    intervalMs: number = 60,
     onLevelUpdate?: (level: number) => void
   ): void {
     this.stopMonitoring();
 
     this.monitorTimer = setInterval(() => {
       const level = this.getLevel();
+      const db = this.getDecibels();
 
       if (onLevelUpdate) {
         onLevelUpdate(level);
+      }
+
+      // Auto-start detection check
+      if (this.autoStartConfig) {
+        this.checkAutoStart(db, level);
       }
 
       // Silence detection check
@@ -94,9 +153,38 @@ export class AudioAnalyzer {
     }
   }
 
+  public configureAutoStartDetection(config: AutoStartDetectorConfig | null): void {
+    this.autoStartConfig = config;
+    this.soundStartTimestamp = null;
+  }
+
   public configureSilenceDetection(config: SilenceConfig | null): void {
     this.silenceConfig = config;
     this.silenceStartTimestamp = null;
+  }
+
+  private checkAutoStart(db: number, level: number): void {
+    if (!this.autoStartConfig) return;
+
+    if (this.autoStartConfig.onLevel) {
+      this.autoStartConfig.onLevel(level, db);
+    }
+
+    if (db >= this.autoStartConfig.thresholdDb) {
+      const now = Date.now();
+      if (this.soundStartTimestamp === null) {
+        this.soundStartTimestamp = now;
+      } else if (now - this.soundStartTimestamp >= this.autoStartConfig.minSoundDurationMs) {
+        // Sustained audio confirmed! Trigger once and clear config
+        const callback = this.autoStartConfig.onAudioDetected;
+        this.autoStartConfig = null;
+        this.soundStartTimestamp = null;
+        callback();
+      }
+    } else {
+      // Audio dropped below threshold -> reject short spike / reset
+      this.soundStartTimestamp = null;
+    }
   }
 
   private checkSilence(currentLevel: number): void {

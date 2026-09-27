@@ -174,6 +174,14 @@ export function useRecorderState() {
     }
   }, []);
 
+  const forceRecord = useCallback(async () => {
+    try {
+      await browserApi.sendMessage({ type: 'FORCE_RECORD' });
+    } catch (err) {
+      console.error('[useRecorderState] Error forcing record:', err);
+    }
+  }, []);
+
   return {
     state,
     currentTab,
@@ -185,5 +193,6 @@ export function useRecorderState() {
     stopRecording,
     resetRecording,
     downloadRecording,
+    forceRecord,
   };
 }

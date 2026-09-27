@@ -789,3 +789,128 @@ body {
   cursor: pointer;
 }
 
+/* Timer Waiting / Auto-start status */
+.timer-waiting .timer-text {
+  color: var(--text-muted);
+  animation: pulseOpacity 1.6s ease-in-out infinite;
+}
+
+.timer-waiting .timer-label {
+  color: var(--accent-blue);
+  font-weight: 600;
+}
+
+.timer-detected .timer-label {
+  color: var(--accent-green);
+  font-weight: 700;
+  animation: pulseOpacity 0.8s ease-in-out infinite;
+}
+
+@keyframes pulseOpacity {
+  0%, 100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Advanced Settings in Smart Settings Card */
+.advanced-toggle-row {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.advanced-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 4px;
+  transition: color 0.15s ease;
+}
+
+.advanced-toggle-btn:hover {
+  color: var(--text-secondary);
+}
+
+.advanced-settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.advanced-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.advanced-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.advanced-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.advanced-val {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--accent-blue);
+  background: rgba(88, 166, 255, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.advanced-slider {
+  width: 100%;
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+  height: 4px;
+}
+
+.advanced-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.25;
+}
+
+.advanced-reset-row {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.advanced-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 10px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.advanced-reset-btn:hover {
+  color: var(--text-secondary);
+}
+
+

@@ -33,6 +33,14 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
     return true;
   }
 
+  if (message.type === 'FORCE_RECORD') {
+    if (contentRecorder) {
+      contentRecorder.forceStart();
+    }
+    sendResponse({ success: true });
+    return true;
+  }
+
   if (message.type === 'FF_STOP_CONTENT_RECORDING') {
     handleStop()
       .then((res) => sendResponse({ success: true, result: res }))
@@ -80,6 +88,17 @@ async function handleStart(): Promise<void> {
         chrome.runtime.sendMessage({
           type: 'AUDIO_LEVEL',
           level,
+        }).catch(() => {});
+      },
+      onStatusChange: (status) => {
+        chrome.runtime.sendMessage({
+          type: 'STATE_CHANGED',
+          state: {
+            status,
+            elapsedMs: 0,
+            tabInfo: currentTabInfo || undefined,
+            settings: currentSettings,
+          },
         }).catch(() => {});
       },
       onError: (err) => {

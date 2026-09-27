@@ -10,6 +10,7 @@ describe('AudioAnalyzer', () => {
     connect: ReturnType<typeof vi.fn>;
     disconnect: ReturnType<typeof vi.fn>;
     getByteFrequencyData: ReturnType<typeof vi.fn>;
+    getByteTimeDomainData: ReturnType<typeof vi.fn>;
   };
   let mockSourceNode: {
     connect: ReturnType<typeof vi.fn>;
@@ -35,6 +36,11 @@ describe('AudioAnalyzer', () => {
         // Populate array with mock audio values (e.g. 64 out of 255)
         for (let i = 0; i < array.length; i++) {
           array[i] = 64;
+        }
+      }),
+      getByteTimeDomainData: vi.fn((array: Uint8Array) => {
+        for (let i = 0; i < array.length; i++) {
+          array[i] = 128; // silent center
         }
       }),
     };

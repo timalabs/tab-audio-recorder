@@ -4,12 +4,22 @@ export interface RecorderSettings {
   trimSilence: boolean;
   expectedDurationMs?: number;
   outputFormat: AudioFormat;
+
+  autoStartRecording: boolean;
+  autoStartThresholdDb: number;
+  autoStartMinSoundDurationMs: number;
+  autoStartPreRollMs: number;
 }
 
 export const DEFAULT_SETTINGS: RecorderSettings = {
   trimSilence: true,
   expectedDurationMs: undefined,
   outputFormat: DEFAULT_FORMAT,
+
+  autoStartRecording: false,
+  autoStartThresholdDb: -48,
+  autoStartMinSoundDurationMs: 400,
+  autoStartPreRollMs: 700,
 };
 
 const STORAGE_KEY = 'tab_audio_recorder_settings';
@@ -25,9 +35,15 @@ export async function loadSettings(): Promise<RecorderSettings> {
           if (chrome.runtime.lastError || !result || !result[STORAGE_KEY]) {
             return resolve(loadFromLocalStorage());
           }
+          const stored = result[STORAGE_KEY];
           resolve({
             ...DEFAULT_SETTINGS,
-            ...result[STORAGE_KEY],
+            ...stored,
+            outputFormat: stored.outputFormat || DEFAULT_SETTINGS.outputFormat,
+            autoStartRecording: stored.autoStartRecording ?? DEFAULT_SETTINGS.autoStartRecording,
+            autoStartThresholdDb: stored.autoStartThresholdDb ?? DEFAULT_SETTINGS.autoStartThresholdDb,
+            autoStartMinSoundDurationMs: stored.autoStartMinSoundDurationMs ?? DEFAULT_SETTINGS.autoStartMinSoundDurationMs,
+            autoStartPreRollMs: stored.autoStartPreRollMs ?? DEFAULT_SETTINGS.autoStartPreRollMs,
           });
         });
       });
@@ -74,6 +90,11 @@ function loadFromLocalStorage(): RecorderSettings {
         return {
           ...DEFAULT_SETTINGS,
           ...parsed,
+          outputFormat: parsed.outputFormat || DEFAULT_SETTINGS.outputFormat,
+          autoStartRecording: parsed.autoStartRecording ?? DEFAULT_SETTINGS.autoStartRecording,
+          autoStartThresholdDb: parsed.autoStartThresholdDb ?? DEFAULT_SETTINGS.autoStartThresholdDb,
+          autoStartMinSoundDurationMs: parsed.autoStartMinSoundDurationMs ?? DEFAULT_SETTINGS.autoStartMinSoundDurationMs,
+          autoStartPreRollMs: parsed.autoStartPreRollMs ?? DEFAULT_SETTINGS.autoStartPreRollMs,
         };
       }
     }

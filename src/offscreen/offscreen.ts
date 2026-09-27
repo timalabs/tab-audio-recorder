@@ -68,6 +68,14 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
     return true;
   }
 
+  if (message.type === 'FORCE_RECORD') {
+    if (activeRecorder) {
+      activeRecorder.forceStart();
+    }
+    sendResponse({ success: true });
+    return true;
+  }
+
   if (message.type === 'STOP_CHROME_OFFSCREEN_CAPTURE') {
     handleStopRecording()
       .then((result) => sendResponse({ success: true, result }))
@@ -106,8 +114,10 @@ async function handleStartRecording(
 
   currentState.settings = settings;
 
+  const initialStatus = settings?.autoStartRecording ? 'WAITING_FOR_AUDIO' : 'STARTING';
+
   broadcastState({
-    status: 'STARTING',
+    status: initialStatus,
     elapsedMs: 0,
     tabInfo,
     settings,
@@ -133,6 +143,14 @@ async function handleStartRecording(
     tabInfo,
     {
       onLevel: (level) => broadcastAudioLevel(level),
+      onStatusChange: (status) => {
+        currentState.status = status;
+        if (status === 'RECORDING') {
+          currentState.startedAt = Date.now();
+          currentState.elapsedMs = 0;
+        }
+        broadcastState(currentState);
+      },
       onError: (err) => {
         console.error('[Offscreen] Recorder error:', err);
         broadcastState({
@@ -159,9 +177,10 @@ async function handleStartRecording(
 
   activeRecorder.start();
 
+  const finalStatus = activeRecorder.getStatus();
   broadcastState({
-    status: 'RECORDING',
-    startedAt: Date.now(),
+    status: finalStatus,
+    startedAt: finalStatus === 'RECORDING' ? Date.now() : undefined,
     elapsedMs: 0,
     tabInfo,
     settings: currentState.settings,
@@ -174,6 +193,25 @@ async function handleStopRecording(): Promise<RecordingResult> {
       return currentState.result;
     }
     throw new Error('No active recording in progress');
+  }
+
+  const recStatus = activeRecorder.getStatus();
+  if (recStatus === 'WAITING_FOR_AUDIO' || recStatus === 'AUDIO_DETECTED') {
+    await activeRecorder.stop();
+    activeRecorder = null;
+    const idleState: RecorderState = {
+      status: 'IDLE',
+      elapsedMs: 0,
+      tabInfo: currentState.tabInfo,
+      settings: currentState.settings,
+    };
+    broadcastState(idleState);
+    return {
+      durationMs: 0,
+      sizeBytes: 0,
+      mimeType: 'audio/webm',
+      filename: '',
+    };
   }
 
   broadcastState({
