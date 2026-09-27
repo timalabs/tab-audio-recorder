@@ -14,7 +14,7 @@ No server. No account. No audio uploads.
 [![Chrome MV3](https://img.shields.io/badge/Chrome-Manifest%20V3-blue)](dist/chrome)
 [![Firefox WebExtension](https://img.shields.io/badge/Firefox-WebExtension-orange)](dist/firefox)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](tsconfig.json)
-[![Tests Passing](https://img.shields.io/badge/Tests-82%2F82%20Passed-success)](tests)
+[![Tests Passing](https://img.shields.io/badge/Tests-93%2F93%20Passed-success)](tests)
 
 ---
 
@@ -30,6 +30,8 @@ The project is designed as a privacy-first, general-purpose browser audio record
 
 * 🎙 **Record audio from the active browser tab**: Capture any sound playing in your Chrome or Firefox tab with a single click.
 * ⚡ **Auto-start recording**: Automatically monitors tab audio level and begins recording hands-free when meaningful sound begins, with pre-roll protection.
+* 💾 **Auto-save recordings locally**: Automatically converts and saves completed tracks directly to your chosen folder or Downloads folder when the track ends.
+* 📁 **Local directory selection**: Pick your preferred recordings folder via the client-side File System Access API (Chromium) or direct download (Firefox).
 * 🌐 **Chrome and Firefox support**: Native Manifest V3 tab capture on Chrome and media stream capture on Firefox.
 * ✂️ **Smart leading/trailing silence trimming**: Automatically detect and slice unwanted silence before and after the track.
 * ⏱ **Optional track duration protection**: Safe window ensures internal silence inside the track is preserved.
@@ -161,6 +163,52 @@ Recording Active (0ms of track beginning lost)
   * **Min Sound Duration**: `100 ms` to `1200 ms` (default: `400 ms`).
   * **Pre-roll Buffer**: `200 ms` to `1500 ms` (default: `700 ms`).
 * **Strict Independence**: Auto-start only initiates recording. Recording continues until you click Stop or cancel monitoring. Smart Silence Trimming and format conversion work seamlessly with auto-started recordings.
+
+---
+
+## Auto-save & Automatic Recording Workflow
+
+When both **Auto-start recording** and **Auto-save** are enabled, the extension provides a completely hands-free recording pipeline from start to disk:
+
+```text
+Auto-start Recording
+        ↓
+Wait for audio (armed)
+        ↓
+Music starts playing in tab
+        ↓
+🔴 Recording begins automatically (with pre-roll)
+        ↓
+Music ends (sustained silence detected after protected duration)
+        ↓
+Recording stops automatically
+        ↓
+Smart Silence Trimming
+        ↓
+Format conversion (MP3 / WAV / FLAC / OGG / WebM)
+        ↓
+Saved automatically to your chosen folder
+        ↓
+✓ Saved
+```
+
+### Workflow Matrix
+
+| Mode | Auto-start | Auto-save | Workflow |
+| :--- | :---: | :---: | :--- |
+| **Fully Automatic** | `ON` | `ON` | Hands-free detection, recording, auto-stop on track end, conversion, and direct local save. |
+| **Manual Recording + Auto-save** | `OFF` | `ON` | User manually clicks Start & Stop; completed recording is automatically converted and saved to disk. |
+| **Auto-start Only** | `ON` | `OFF` | Automatically begins on sound; user stops or track ends, then manually downloads. |
+| **Standard Manual** | `OFF` | `OFF` | Standard manual workflow with preview, trim, format selection, and manual download. |
+
+### Save Location & Browser Support
+
+* **Google Chrome & Chromium (Chrome, Edge, Brave)**:
+  Uses the native client-side **File System Access API** (`window.showDirectoryPicker()`). The directory handle is stored securely in your browser's IndexedDB so you don't need to select the folder after every recording. Recordings are written directly to your chosen local folder. Duplicate filenames are automatically resolved (`Song (1).mp3`, `Song (2).mp3`).
+* **Mozilla Firefox**:
+  Firefox does not support the File System Access API. The extension transparently falls back to the native `chrome.downloads` API with `saveAs: false`, saving recordings directly into your browser's Downloads folder without opening unnecessary confirmation prompts.
+* **Safety Guarantee — Never Lose a Recording**:
+  Audio blobs are always retained in browser memory. If a save operation ever fails (e.g. permission revoked or disk full), the extension displays an error banner and gives you instant manual download and folder reselection options.
 
 ---
 

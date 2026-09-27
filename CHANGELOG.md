@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] - 2026-09-28
+
+### Added
+- **Auto-Save Recording Pipeline**:
+  - Full hands-free recording workflow: `Waiting for audio` → `Audio detected` → `Recording` → `Track ends` → `Smart Trim` → `Format Conversion` → `Direct Auto-Save` → `✓ Saved`.
+  - **Auto-save Toggle (`ON / OFF`, default: OFF)**: Placed directly below Auto-start Recording in the popup UI.
+- **Local Directory Access & Persistence**:
+  - **File System Access API (`showDirectoryPicker`)**: Direct client-side folder selection for Chrome, Edge, and Chromium browsers.
+  - **IndexedDB Handle Storage**: Stores and restores persistent directory handles across sessions (`tab_audio_recorder_db`), verifying permissions with `queryPermission`.
+  - **Friendly Folder Display**: Clean UI displaying `📁 {folderName} ✓` with `[ Change folder ]` action without exposing filesystem paths.
+  - **Permission Recovery**: Detects revoked folder access or moved folders and gracefully prompts `Save folder is no longer available. [ Choose folder ]`.
+  - **Duplicate Filename Avoidance**: Scans directory and dynamically increments filenames (`Track (1).mp3`, `Track (2).mp3`).
+  - **Firefox Downloads API Fallback**: Direct saving fallback via `chrome.downloads.download({ url, filename, saveAs: false })`, saving directly to the Downloads folder without interrupting confirmation prompts.
+- **Automatic End Detection with Safe Duration Protection**:
+  - Automatically identifies track completion when sustained silence ($\ge 3.0\text{s}$) is detected after the protected track duration.
+  - When `Track duration` is specified, internal silence is strictly protected and will never prematurely end the recording.
+  - Enforces a minimum 12-second safe recording window when no duration is specified.
+- **Safety Guarantee — Never Lose a Recording**:
+  - All master and converted audio Blobs are permanently preserved in memory.
+  - If a filesystem error occurs, CompletedView displays an alert banner with direct `[ Download manually ]` and `[ Choose another folder ]` recovery actions.
+- **Live Progress & Completion UI**:
+  - Non-blocking conversion progress feedback (`Converting to MP3... 72%`).
+  - Dedicated auto-save banner: `✓ Saved automatically (My-Song.mp3 in Music Recordings)`.
+  - Multi-format re-download and "Download again" support.
+- **Automated Test Coverage**:
+  - Added `tests/fileSystem.test.ts` (7 tests) and `tests/autoSaveWorkflow.test.ts` (4 tests), bringing test suite to 93 passing tests.
+
+---
+
 ## [1.3.1] - 2026-09-27
 
 ### Fixed

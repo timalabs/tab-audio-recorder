@@ -9,6 +9,9 @@ export interface RecorderSettings {
   autoStartThresholdDb: number;
   autoStartMinSoundDurationMs: number;
   autoStartPreRollMs: number;
+
+  autoSave: boolean;
+  saveFolderName?: string;
 }
 
 export const DEFAULT_SETTINGS: RecorderSettings = {
@@ -20,6 +23,9 @@ export const DEFAULT_SETTINGS: RecorderSettings = {
   autoStartThresholdDb: -48,
   autoStartMinSoundDurationMs: 400,
   autoStartPreRollMs: 700,
+
+  autoSave: false,
+  saveFolderName: undefined,
 };
 
 const STORAGE_KEY = 'tab_audio_recorder_settings';
@@ -44,6 +50,8 @@ export async function loadSettings(): Promise<RecorderSettings> {
             autoStartThresholdDb: stored.autoStartThresholdDb ?? DEFAULT_SETTINGS.autoStartThresholdDb,
             autoStartMinSoundDurationMs: stored.autoStartMinSoundDurationMs ?? DEFAULT_SETTINGS.autoStartMinSoundDurationMs,
             autoStartPreRollMs: stored.autoStartPreRollMs ?? DEFAULT_SETTINGS.autoStartPreRollMs,
+            autoSave: stored.autoSave ?? DEFAULT_SETTINGS.autoSave,
+            saveFolderName: stored.saveFolderName ?? DEFAULT_SETTINGS.saveFolderName,
           });
         });
       });
@@ -95,6 +103,8 @@ function loadFromLocalStorage(): RecorderSettings {
           autoStartThresholdDb: parsed.autoStartThresholdDb ?? DEFAULT_SETTINGS.autoStartThresholdDb,
           autoStartMinSoundDurationMs: parsed.autoStartMinSoundDurationMs ?? DEFAULT_SETTINGS.autoStartMinSoundDurationMs,
           autoStartPreRollMs: parsed.autoStartPreRollMs ?? DEFAULT_SETTINGS.autoStartPreRollMs,
+          autoSave: parsed.autoSave ?? DEFAULT_SETTINGS.autoSave,
+          saveFolderName: parsed.saveFolderName ?? DEFAULT_SETTINGS.saveFolderName,
         };
       }
     }

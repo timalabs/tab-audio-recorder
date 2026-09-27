@@ -111,6 +111,11 @@ async function handleStart(): Promise<void> {
           message: err.message,
         }).catch(() => {});
       },
+      onAutoStop: () => {
+        handleStop().catch((err) => {
+          console.warn('[ContentScript] Auto-stop failed:', err);
+        });
+      },
     },
     false, // In-page elements are already audible through DOM, don't double-route
     currentSettings

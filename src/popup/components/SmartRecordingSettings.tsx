@@ -1,11 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
+import {
+  Sliders,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  Folder,
+  FolderCheck,
+  AlertTriangle,
+  Check,
+} from 'lucide-react';
 import {
   formatDurationInput,
   parseDurationInput,
   RecorderSettings,
   DEFAULT_SETTINGS,
 } from '../../utils/settings.ts';
+import {
+  isFileSystemAccessSupported,
+  getStoredDirectoryHandle,
+  verifyDirectoryPermission,
+  promptDirectoryPicker,
+} from '../../utils/fileSystem.ts';
 
 interface SmartRecordingSettingsProps {
   settings: RecorderSettings;
@@ -22,6 +37,64 @@ export const SmartRecordingSettings: React.FC<SmartRecordingSettingsProps> = ({
     formatDurationInput(settings.expectedDurationMs)
   );
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+  const [folderName, setFolderName] = useState<string | undefined>(settings.saveFolderName);
+  const [folderAvailable, setFolderAvailable] = useState<boolean>(true);
+  const [isCheckingFolder, setIsCheckingFolder] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function checkFolder() {
+      if (!isFileSystemAccessSupported()) {
+        return;
+      }
+      setIsCheckingFolder(true);
+      try {
+        const handle = await getStoredDirectoryHandle();
+        if (handle) {
+          const hasPerm = await verifyDirectoryPermission(handle, false);
+          if (isMounted) {
+            setFolderAvailable(hasPerm);
+            setFolderName(handle.name || settings.saveFolderName);
+            if (!settings.saveFolderName && handle.name) {
+              onUpdateSettings({ saveFolderName: handle.name });
+            }
+          }
+        } else {
+          if (isMounted) {
+            setFolderAvailable(false);
+            setFolderName(undefined);
+          }
+        }
+      } catch {
+        if (isMounted) {
+          setFolderAvailable(false);
+        }
+      } finally {
+        if (isMounted) {
+          setIsCheckingFolder(false);
+        }
+      }
+    }
+
+    if (settings.autoSave) {
+      checkFolder();
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [settings.autoSave]);
+
+  const handleChooseFolder = async () => {
+    if (disabled) return;
+    try {
+      const { folderName: name } = await promptDirectoryPicker();
+      setFolderName(name);
+      setFolderAvailable(true);
+      onUpdateSettings({ saveFolderName: name });
+    } catch (err) {
+      console.warn('[SmartRecordingSettings] Directory picker error:', err);
+    }
+  };
 
   useEffect(() => {
     setDurationStr(formatDurationInput(settings.expectedDurationMs));
@@ -38,6 +111,13 @@ export const SmartRecordingSettings: React.FC<SmartRecordingSettingsProps> = ({
     if (disabled) return;
     onUpdateSettings({
       autoStartRecording: !settings.autoStartRecording,
+    });
+  };
+
+  const handleToggleAutoSave = () => {
+    if (disabled) return;
+    onUpdateSettings({
+      autoSave: !settings.autoSave,
     });
   };
 
@@ -69,6 +149,7 @@ export const SmartRecordingSettings: React.FC<SmartRecordingSettingsProps> = ({
 
   const isTrimmingOn = settings.trimSilence;
   const isAutoStartOn = settings.autoStartRecording;
+  const isAutoSaveOn = settings.autoSave;
 
   return (
     <div className="smart-settings-card" role="region" aria-label="Smart recording settings">
@@ -157,6 +238,101 @@ export const SmartRecordingSettings: React.FC<SmartRecordingSettingsProps> = ({
           <span className="toggle-text">{isAutoStartOn ? 'ON' : 'OFF'}</span>
         </button>
       </div>
+
+      {/* Row 4: Auto-save Toggle */}
+      <div className="settings-row">
+        <div className="settings-label-group">
+          <span className="settings-label">Auto-save</span>
+          <span className="settings-hint">Saves recording when track ends</span>
+        </div>
+
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isAutoSaveOn}
+          className={`toggle-btn ${isAutoSaveOn ? 'active' : ''}`}
+          onClick={handleToggleAutoSave}
+          disabled={disabled}
+          aria-label={`Auto-save: currently ${isAutoSaveOn ? 'ON' : 'OFF'}`}
+        >
+          <span className="toggle-track">
+            <span className="toggle-thumb" />
+          </span>
+          <span className="toggle-text">{isAutoSaveOn ? 'ON' : 'OFF'}</span>
+        </button>
+      </div>
+
+      {/* Save Location (directly under Auto-save) */}
+      {isAutoSaveOn && (
+        <div className="save-location-container">
+          <div className="save-location-header">
+            <div className="save-location-title">
+              <Folder size={12} className="text-secondary" />
+              <span>Save location</span>
+            </div>
+          </div>
+
+          {isFileSystemAccessSupported() ? (
+            folderAvailable && folderName ? (
+              <div className="save-location-status">
+                <div className="save-folder-badge" title={folderName}>
+                  <FolderCheck size={13} className="save-folder-check" />
+                  <span>{folderName}</span>
+                  <Check size={12} className="save-folder-check" />
+                </div>
+                <button
+                  type="button"
+                  className="btn-folder-action"
+                  onClick={handleChooseFolder}
+                  disabled={disabled || isCheckingFolder}
+                >
+                  Change folder
+                </button>
+              </div>
+            ) : !folderAvailable && folderName ? (
+              <div
+                className="save-location-status"
+                style={{ flexDirection: 'column', alignItems: 'flex-start' }}
+              >
+                <div className="save-location-warning">
+                  <AlertTriangle size={13} />
+                  <span>Save folder is no longer available.</span>
+                </div>
+                <button
+                  type="button"
+                  className="btn-folder-action"
+                  style={{ marginTop: '4px' }}
+                  onClick={handleChooseFolder}
+                  disabled={disabled}
+                >
+                  Choose folder
+                </button>
+              </div>
+            ) : (
+              <div className="save-location-status">
+                <span className="save-location-hint">No folder chosen yet</span>
+                <button
+                  type="button"
+                  className="btn-folder-action"
+                  onClick={handleChooseFolder}
+                  disabled={disabled || isCheckingFolder}
+                >
+                  Choose folder
+                </button>
+              </div>
+            )
+          ) : (
+            <div className="save-location-status">
+              <div className="save-folder-badge">
+                <FolderCheck size={13} className="save-folder-check" />
+                <span>Downloads folder</span>
+                <Check size={12} className="save-folder-check" />
+              </div>
+              <span className="save-location-hint">Saves directly via Firefox downloads</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Advanced Settings Accordion Toggle */}
       <div className="advanced-toggle-row">

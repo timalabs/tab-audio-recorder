@@ -78,6 +78,8 @@ describe('Settings and Duration Input Parsing', () => {
       expect(settings.trimSilence).toBe(true);
       expect(settings.expectedDurationMs).toBeUndefined();
       expect(settings.outputFormat).toBe('mp3');
+      expect(settings.autoSave).toBe(false);
+      expect(settings.saveFolderName).toBeUndefined();
     });
 
     it('should save and reload custom settings', async () => {
@@ -85,26 +87,32 @@ describe('Settings and Duration Input Parsing', () => {
         trimSilence: false,
         expectedDurationMs: 180000,
         outputFormat: 'wav',
+        autoSave: true,
+        saveFolderName: 'Music Recordings',
       });
 
       const loaded = await loadSettings();
       expect(loaded.trimSilence).toBe(false);
       expect(loaded.expectedDurationMs).toBe(180000);
       expect(loaded.outputFormat).toBe('wav');
+      expect(loaded.autoSave).toBe(true);
+      expect(loaded.saveFolderName).toBe('Music Recordings');
     });
 
     it('should preserve existing settings on partial updates', async () => {
-      await saveSettings({ expectedDurationMs: 222000, outputFormat: 'flac' });
+      await saveSettings({ expectedDurationMs: 222000, outputFormat: 'flac', autoSave: true });
       let loaded = await loadSettings();
       expect(loaded.trimSilence).toBe(true);
       expect(loaded.expectedDurationMs).toBe(222000);
       expect(loaded.outputFormat).toBe('flac');
+      expect(loaded.autoSave).toBe(true);
 
       await saveSettings({ trimSilence: false });
       loaded = await loadSettings();
       expect(loaded.trimSilence).toBe(false);
       expect(loaded.expectedDurationMs).toBe(222000);
       expect(loaded.outputFormat).toBe('flac');
+      expect(loaded.autoSave).toBe(true);
     });
   });
 });

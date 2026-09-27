@@ -191,6 +191,11 @@ async function handleStartRecording(
           settings: currentState.settings,
         });
       },
+      onAutoStop: () => {
+        handleStopRecording().catch((err) => {
+          console.warn('[Offscreen] Auto-stop failed:', err);
+        });
+      },
     },
     true, // Pass-through to speakers so user can still hear tab
     settings

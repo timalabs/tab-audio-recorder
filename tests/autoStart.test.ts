@@ -243,6 +243,7 @@ describe('Auto-Start Audio Detection & Pre-roll Engine', () => {
         autoStartThresholdDb: -48,
         autoStartMinSoundDurationMs: 400,
         autoStartPreRollMs: 700,
+        autoSave: false,
       }
     );
 
@@ -294,6 +295,7 @@ describe('Auto-Start Audio Detection & Pre-roll Engine', () => {
         autoStartThresholdDb: -48,
         autoStartMinSoundDurationMs: 400,
         autoStartPreRollMs: 700,
+        autoSave: false,
       }
     );
 
@@ -327,6 +329,7 @@ describe('Auto-Start Audio Detection & Pre-roll Engine', () => {
         autoStartThresholdDb: -48,
         autoStartMinSoundDurationMs: 400,
         autoStartPreRollMs: 700,
+        autoSave: false,
       }
     );
 

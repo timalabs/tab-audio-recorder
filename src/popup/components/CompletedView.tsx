@@ -8,6 +8,7 @@ import {
   FileAudio,
   AlertCircle,
   Check,
+  Folder,
 } from 'lucide-react';
 import { RecordingResult } from '../../recorder/RecorderState.ts';
 import {
@@ -20,6 +21,12 @@ import { convertAudio } from '../../audio/conversion/AudioConverter.ts';
 import { formatBytes } from '../../utils/formatters.ts';
 import { formatDuration } from '../../utils/time.ts';
 import { RecorderSettings } from '../../utils/settings.ts';
+import {
+  isFileSystemAccessSupported,
+  saveRecordingAuto,
+  promptDirectoryPicker,
+  saveBlobToDirectory,
+} from '../../utils/fileSystem.ts';
 
 interface ConvertedFile {
   blob: Blob;
@@ -81,6 +88,13 @@ export const CompletedView: React.FC<CompletedViewProps> = ({
   const [conversionProgress, setConversionProgress] = useState<number>(0);
   const [conversionError, setConversionError] = useState<string | null>(null);
 
+  type AutoSaveState = 'idle' | 'converting' | 'saving' | 'saved' | 'failed';
+  const [autoSaveState, setAutoSaveState] = useState<AutoSaveState>('idle');
+  const [savedFilename, setSavedFilename] = useState<string | null>(null);
+  const [savedFolderName, setSavedFolderName] = useState<string | null>(null);
+  const [autoSaveError, setAutoSaveError] = useState<string | null>(null);
+  const autoSaveInitiatedRef = useRef<boolean>(false);
+
   const abortRef = useRef<boolean>(false);
 
   // Sync format with settings if settings change
@@ -90,23 +104,13 @@ export const CompletedView: React.FC<CompletedViewProps> = ({
     }
   }, [settings?.outputFormat]);
 
-  if (!result) return null;
-
   const currentFormatInfo = getFormatInfo(selectedFormat);
   const currentConverted = convertedMap[selectedFormat];
   const isAlreadyConverted = Boolean(currentConverted);
-  const targetFilename = getConvertedFilename(result.filename, currentFormatInfo.extension);
-
-  const handleFormatChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newFormat = e.target.value as AudioFormat;
-    setSelectedFormat(newFormat);
-    setConversionError(null);
-    if (onUpdateSettings) {
-      onUpdateSettings({ outputFormat: newFormat });
-    }
-  };
+  const targetFilename = result ? getConvertedFilename(result.filename, currentFormatInfo.extension) : '';
 
   const fetchMasterBlob = async (): Promise<Blob> => {
+    if (!result) throw new Error('No recording available');
     if (result.blobUrl) {
       const res = await fetch(result.blobUrl);
       if (!res.ok) {
@@ -122,6 +126,140 @@ export const CompletedView: React.FC<CompletedViewProps> = ({
       return await res.blob();
     }
     throw new Error('No recorded audio data available');
+  };
+
+  // Automatic save workflow execution
+  useEffect(() => {
+    if (!settings?.autoSave || !result) return;
+    // Don't auto-save empty recordings or recordings shorter than 1s
+    if (result.durationMs < 1000) return;
+    if (!result.blobUrl && !result.dataUrl) return;
+    if (autoSaveInitiatedRef.current) return;
+
+    autoSaveInitiatedRef.current = true;
+
+    async function executeAutoSave() {
+      setIsConverting(true);
+      setAutoSaveState('converting');
+      setConversionProgress(0);
+      setConversionError(null);
+      setAutoSaveError(null);
+      abortRef.current = false;
+
+      try {
+        const masterBlob = await fetchMasterBlob();
+
+        const converted = await convertAudio(masterBlob, {
+          targetFormat: selectedFormat,
+          bitrateKbps: 192,
+          onProgress: (percent) => setConversionProgress(percent),
+          isAborted: () => abortRef.current,
+        });
+
+        if (!result) return;
+        const targetName = getConvertedFilename(result.filename, currentFormatInfo.extension);
+        const newConverted: ConvertedFile = {
+          blob: converted.blob,
+          filename: targetName,
+          sizeBytes: converted.sizeBytes,
+        };
+
+        setConvertedMap((prev) => ({
+          ...prev,
+          [selectedFormat]: newConverted,
+        }));
+
+        setAutoSaveState('saving');
+
+        const saveRes = await saveRecordingAuto(
+          converted.blob,
+          targetName,
+          null,
+          settings?.saveFolderName
+        );
+
+        if (saveRes.success) {
+          setAutoSaveState('saved');
+          setSavedFilename(saveRes.filename);
+          setSavedFolderName(saveRes.folderName || 'Selected Folder');
+        } else {
+          setAutoSaveState('failed');
+          setAutoSaveError(saveRes.error || 'Direct save failed. Please save manually.');
+        }
+      } catch (err) {
+        if (!abortRef.current) {
+          const msg = err instanceof Error ? err.message : String(err);
+          setAutoSaveState('failed');
+          setAutoSaveError(msg);
+        }
+      } finally {
+        setIsConverting(false);
+      }
+    }
+
+    executeAutoSave();
+  }, [result, settings?.autoSave, selectedFormat, currentFormatInfo.extension]);
+
+  const handleRetryWithNewFolder = async () => {
+    if (!result) return;
+    try {
+      const { handle, folderName: name } = await promptDirectoryPicker();
+      if (onUpdateSettings) {
+        onUpdateSettings({ saveFolderName: name });
+      }
+
+      const currentConvertedFile = convertedMap[selectedFormat];
+      let blobToSave: Blob;
+      let filenameToSave: string;
+
+      if (currentConvertedFile) {
+        blobToSave = currentConvertedFile.blob;
+        filenameToSave = currentConvertedFile.filename;
+      } else {
+        const master = await fetchMasterBlob();
+        const converted = await convertAudio(master, {
+          targetFormat: selectedFormat,
+          bitrateKbps: 192,
+        });
+        blobToSave = converted.blob;
+        filenameToSave = getConvertedFilename(result.filename, currentFormatInfo.extension);
+        setConvertedMap((prev) => ({
+          ...prev,
+          [selectedFormat]: {
+            blob: blobToSave,
+            filename: filenameToSave,
+            sizeBytes: converted.sizeBytes,
+          },
+        }));
+      }
+
+      setAutoSaveState('saving');
+      const { savedFilename: finalName } = await saveBlobToDirectory(
+        handle,
+        filenameToSave,
+        blobToSave
+      );
+
+      setAutoSaveState('saved');
+      setSavedFilename(finalName);
+      setSavedFolderName(name);
+      setAutoSaveError(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setAutoSaveError(msg);
+      setAutoSaveState('failed');
+    }
+  };
+
+  if (!result) return null;
+
+  const handleFormatChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newFormat = e.target.value as AudioFormat;
+    setSelectedFormat(newFormat);
+    setConversionError(null);
+    if (onUpdateSettings) {
+      onUpdateSettings({ outputFormat: newFormat });
+    }
   };
 
   const handleConvertAndDownload = async () => {
@@ -244,6 +382,53 @@ export const CompletedView: React.FC<CompletedViewProps> = ({
         </div>
       </div>
 
+      {/* Auto-save Status Banners */}
+      {autoSaveState === 'saved' && (
+        <div className="auto-saved-banner" role="status">
+          <CheckCircle2 size={16} className="save-folder-check" />
+          <div className="auto-saved-content">
+            <span className="auto-saved-title">✓ Saved automatically</span>
+            <span className="auto-saved-filename" title={savedFilename || targetFilename}>
+              {savedFilename || targetFilename}
+            </span>
+            {savedFolderName && (
+              <span className="auto-saved-folder">Saved to {savedFolderName}</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {autoSaveState === 'failed' && (
+        <div className="auto-save-failed-banner" role="alert">
+          <AlertCircle size={16} className="text-error" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div className="auto-save-failed-content">
+            <span className="failed-title">Automatic save failed.</span>
+            <span className="failed-subtitle">Your recording is still available.</span>
+            {autoSaveError && <span className="failed-reason">{autoSaveError}</span>}
+            <div className="failed-actions">
+              <button
+                type="button"
+                className="btn-download-failed"
+                onClick={handleConvertAndDownload}
+              >
+                <Download size={13} />
+                <span>Download manually</span>
+              </button>
+              {isFileSystemAccessSupported() && (
+                <button
+                  type="button"
+                  className="btn-folder-retry"
+                  onClick={handleRetryWithNewFolder}
+                >
+                  <Folder size={13} />
+                  <span>Choose another folder</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Format Conversion Section */}
       <div className="conversion-section">
         <div className="format-selector-row">
@@ -350,7 +535,9 @@ export const CompletedView: React.FC<CompletedViewProps> = ({
           onClick={handleConvertAndDownload}
           disabled={isConverting}
           aria-label={
-            isAlreadyConverted
+            autoSaveState === 'saved'
+              ? `Download again (${currentFormatInfo.label})`
+              : isAlreadyConverted
               ? `Download ${currentFormatInfo.label}`
               : `Convert and download as ${currentFormatInfo.label}`
           }
@@ -358,7 +545,9 @@ export const CompletedView: React.FC<CompletedViewProps> = ({
         >
           <Download size={16} />
           <span>
-            {isAlreadyConverted
+            {autoSaveState === 'saved'
+              ? `Download again (${currentFormatInfo.label})`
+              : isAlreadyConverted
               ? `Download ${currentFormatInfo.label}`
               : `Convert & Download (${currentFormatInfo.label})`}
           </span>

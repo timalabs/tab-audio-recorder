@@ -11,6 +11,7 @@ export interface AudioRecorderCallbacks {
   onError?: (error: Error) => void;
   onComplete?: (result: RecordingResult) => void;
   onStatusChange?: (status: RecordingStatus) => void;
+  onAutoStop?: () => void;
 }
 
 export class AudioRecorder {
@@ -195,6 +196,22 @@ export class AudioRecorder {
 
       // Continue audio level monitoring
       if (this.analyzer) {
+        // Configure automatic end detection for automatic recording workflow
+        if (this.settings?.autoStartRecording) {
+          this.analyzer.configureSilenceDetection({
+            threshold: 0.008,
+            silenceDurationMs: 3000,
+            recordingStartedAt: this.startedAt,
+            expectedDurationMs: this.settings?.expectedDurationMs,
+            minRecordingMs: 12000,
+            onSilence: () => {
+              if (this.status === 'RECORDING') {
+                this.callbacks.onAutoStop?.();
+              }
+            },
+          });
+        }
+
         this.analyzer.startMonitoring(80, (level) => {
           if (this.callbacks.onLevel) {
             this.callbacks.onLevel(level);

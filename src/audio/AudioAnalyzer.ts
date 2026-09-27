@@ -1,9 +1,12 @@
 import { AutoStartDebugInfo } from '../recorder/RecorderState.ts';
 
 export interface SilenceConfig {
-  threshold: number; // Volume below which is considered silence (0.01 - 0.05)
+  threshold: number; // Volume below which is considered silence (0.005 - 0.05)
   silenceDurationMs: number; // Duration of continuous silence before triggering
   onSilence: () => void;
+  recordingStartedAt?: number;
+  expectedDurationMs?: number;
+  minRecordingMs?: number;
 }
 
 export interface AutoStartDetectorConfig {
@@ -341,14 +344,31 @@ export class AudioAnalyzer {
   private checkSilence(currentLevel: number): void {
     if (!this.silenceConfig) return;
 
+    const now = Date.now();
+
+    // Protected duration window: silence must NEVER automatically end the recording during this window
+    if (this.silenceConfig.recordingStartedAt) {
+      const elapsed = now - this.silenceConfig.recordingStartedAt;
+      const protectedWindowMs =
+        this.silenceConfig.expectedDurationMs && this.silenceConfig.expectedDurationMs > 0
+          ? this.silenceConfig.expectedDurationMs
+          : (this.silenceConfig.minRecordingMs ?? 12000);
+
+      if (elapsed < protectedWindowMs) {
+        this.silenceStartTimestamp = null;
+        return;
+      }
+    }
+
     if (currentLevel < this.silenceConfig.threshold) {
-      const now = Date.now();
       if (!this.silenceStartTimestamp) {
         this.silenceStartTimestamp = now;
       } else if (now - this.silenceStartTimestamp >= this.silenceConfig.silenceDurationMs) {
-        // Trigger silence callback once
-        this.silenceConfig.onSilence();
-        this.silenceConfig = null; // disable further triggers until reconfigured
+        // Sustained silence confirmed after protected window: trigger callback once
+        const callback = this.silenceConfig.onSilence;
+        this.silenceConfig = null;
+        this.silenceStartTimestamp = null;
+        callback();
       }
     } else {
       this.silenceStartTimestamp = null;
