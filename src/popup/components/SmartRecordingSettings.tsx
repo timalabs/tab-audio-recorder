@@ -5,9 +5,6 @@ import {
   ChevronUp,
   RotateCcw,
   Folder,
-  FolderCheck,
-  AlertTriangle,
-  Check,
 } from 'lucide-react';
 import {
   formatDurationInput,
@@ -38,8 +35,11 @@ export const SmartRecordingSettings: React.FC<SmartRecordingSettingsProps> = ({
   );
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [folderName, setFolderName] = useState<string | undefined>(settings.saveFolderName);
-  const [folderAvailable, setFolderAvailable] = useState<boolean>(true);
   const [isCheckingFolder, setIsCheckingFolder] = useState<boolean>(false);
+
+  useEffect(() => {
+    setFolderName(settings.saveFolderName);
+  }, [settings.saveFolderName]);
 
   useEffect(() => {
     let isMounted = true;
@@ -52,23 +52,15 @@ export const SmartRecordingSettings: React.FC<SmartRecordingSettingsProps> = ({
         const handle = await getStoredDirectoryHandle();
         if (handle) {
           const hasPerm = await verifyDirectoryPermission(handle, false);
-          if (isMounted) {
-            setFolderAvailable(hasPerm);
+          if (isMounted && hasPerm) {
             setFolderName(handle.name || settings.saveFolderName);
             if (!settings.saveFolderName && handle.name) {
               onUpdateSettings({ saveFolderName: handle.name });
             }
           }
-        } else {
-          if (isMounted) {
-            setFolderAvailable(false);
-            setFolderName(undefined);
-          }
         }
       } catch {
-        if (isMounted) {
-          setFolderAvailable(false);
-        }
+        // Fallback to relative Downloads subfolder
       } finally {
         if (isMounted) {
           setIsCheckingFolder(false);
@@ -89,11 +81,16 @@ export const SmartRecordingSettings: React.FC<SmartRecordingSettingsProps> = ({
     try {
       const { folderName: name } = await promptDirectoryPicker();
       setFolderName(name);
-      setFolderAvailable(true);
       onUpdateSettings({ saveFolderName: name });
     } catch (err) {
       console.warn('[SmartRecordingSettings] Directory picker error:', err);
     }
+  };
+
+  const handleFolderNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setFolderName(val);
+    onUpdateSettings({ saveFolderName: val });
   };
 
   useEffect(() => {
@@ -270,67 +267,39 @@ export const SmartRecordingSettings: React.FC<SmartRecordingSettingsProps> = ({
               <Folder size={12} className="text-secondary" />
               <span>Save location</span>
             </div>
+            {isFileSystemAccessSupported() && (
+              <button
+                type="button"
+                className="btn-folder-action"
+                onClick={handleChooseFolder}
+                disabled={disabled || isCheckingFolder}
+                title="Select an external folder on your disk (Chrome/Chromium)"
+              >
+                Browse disk...
+              </button>
+            )}
           </div>
 
-          {isFileSystemAccessSupported() ? (
-            folderAvailable && folderName ? (
-              <div className="save-location-status">
-                <div className="save-folder-badge" title={folderName}>
-                  <FolderCheck size={13} className="save-folder-check" />
-                  <span>{folderName}</span>
-                  <Check size={12} className="save-folder-check" />
-                </div>
-                <button
-                  type="button"
-                  className="btn-folder-action"
-                  onClick={handleChooseFolder}
-                  disabled={disabled || isCheckingFolder}
-                >
-                  Change folder
-                </button>
-              </div>
-            ) : !folderAvailable && folderName ? (
-              <div
-                className="save-location-status"
-                style={{ flexDirection: 'column', alignItems: 'flex-start' }}
-              >
-                <div className="save-location-warning">
-                  <AlertTriangle size={13} />
-                  <span>Save folder is no longer available.</span>
-                </div>
-                <button
-                  type="button"
-                  className="btn-folder-action"
-                  style={{ marginTop: '4px' }}
-                  onClick={handleChooseFolder}
-                  disabled={disabled}
-                >
-                  Choose folder
-                </button>
-              </div>
-            ) : (
-              <div className="save-location-status">
-                <span className="save-location-hint">No folder chosen yet</span>
-                <button
-                  type="button"
-                  className="btn-folder-action"
-                  onClick={handleChooseFolder}
-                  disabled={disabled || isCheckingFolder}
-                >
-                  Choose folder
-                </button>
-              </div>
-            )
-          ) : (
-            <div className="save-location-status">
-              <div className="save-folder-badge">
-                <FolderCheck size={13} className="save-folder-check" />
-                <span>Downloads folder</span>
-                <Check size={12} className="save-folder-check" />
-              </div>
-              <span className="save-location-hint">Saves directly via Firefox downloads</span>
-            </div>
-          )}
+          <div
+            className="folder-name-row"
+            title="Subfolder inside your Downloads directory where recordings are saved"
+          >
+            <span className="folder-prefix">Downloads /</span>
+            <input
+              type="text"
+              className="folder-name-input"
+              value={folderName || ''}
+              placeholder="Tab Audio Recorder"
+              onChange={handleFolderNameChange}
+              disabled={disabled}
+              maxLength={40}
+              aria-label="Subfolder name inside Downloads"
+            />
+          </div>
+
+          <span className="save-location-hint">
+            ⓘ Recordings will be saved into Downloads/{folderName || 'Tab Audio Recorder'}/.
+          </span>
         </div>
       )}
 

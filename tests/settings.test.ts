@@ -79,7 +79,7 @@ describe('Settings and Duration Input Parsing', () => {
       expect(settings.expectedDurationMs).toBeUndefined();
       expect(settings.outputFormat).toBe('mp3');
       expect(settings.autoSave).toBe(false);
-      expect(settings.saveFolderName).toBeUndefined();
+      expect(settings.saveFolderName).toBe('Tab Audio Recorder');
     });
 
     it('should save and reload custom settings', async () => {

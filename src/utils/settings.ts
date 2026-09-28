@@ -25,7 +25,7 @@ export const DEFAULT_SETTINGS: RecorderSettings = {
   autoStartPreRollMs: 700,
 
   autoSave: false,
-  saveFolderName: undefined,
+  saveFolderName: 'Tab Audio Recorder',
 };
 
 const STORAGE_KEY = 'tab_audio_recorder_settings';

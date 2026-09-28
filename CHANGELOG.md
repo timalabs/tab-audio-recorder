@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.1] - 2026-09-28
+
+### Added
+- **Subfolder Customization in Downloads Directory**:
+  - Direct editable subfolder input (`Downloads / [ Tab Audio Recorder ]`) in Auto-save settings.
+  - Automatically directs all saved recordings to `Downloads/<subfolder>/<filename>`.
+  - Works consistently across all browsers (Google Chrome, Mozilla Firefox, Brave, Microsoft Edge) without being blocked by browser sandbox restrictions or popup blur events.
+- **Improved Directory Picker UX**:
+  - Added "Browse disk..." optional button for Chromium desktop folder picking.
+  - Added clean descriptive hint explaining file save paths.
+
+### Fixed
+- **Downloads Folder Destination Behavior**:
+  - Addressed browser security restriction where extensions cannot directly set arbitrary absolute OS paths outside the user's configured Downloads directory via `chrome.downloads`.
+  - Fixed popup blur abort issue when calling directory picker from extension popup window by providing relative subfolder routing.
+
+---
+
 ## [1.4.0] - 2026-09-28
 
 ### Added

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Audio Recorder",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Record audio from this browser tab — privately, locally, without a server.",
   "permissions": [
     "tabCapture",

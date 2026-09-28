@@ -281,11 +281,19 @@ export async function saveRecordingAuto(
   try {
     if (typeof chrome !== 'undefined' && chrome.downloads && chrome.downloads.download) {
       const url = URL.createObjectURL(blob);
+      const cleanSubfolder =
+        folderName && folderName !== 'Downloads'
+          ? folderName.replace(/[<>:"/\\|?*]/g, '').trim()
+          : '';
+      const finalDownloadPath = cleanSubfolder
+        ? `${cleanSubfolder}/${desiredFilename}`
+        : desiredFilename;
+
       await new Promise<void>((resolve, reject) => {
         chrome.downloads.download(
           {
             url,
-            filename: desiredFilename,
+            filename: finalDownloadPath,
             saveAs: false,
           },
           (downloadId) => {
@@ -304,7 +312,7 @@ export async function saveRecordingAuto(
         success: true,
         filename: desiredFilename,
         method: 'downloads',
-        folderName: 'Downloads',
+        folderName: cleanSubfolder ? `Downloads / ${cleanSubfolder}` : 'Downloads',
       };
     }
   } catch (err) {

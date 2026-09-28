@@ -176,5 +176,30 @@ describe('fileSystem and Auto-save Utility Tests', () => {
       expect((downloadOptions as unknown as { saveAs: boolean }).saveAs).toBe(false);
       expect((downloadOptions as unknown as { filename: string }).filename).toBe('Firefox-Track.mp3');
     });
+
+    it('should save to subfolder in Downloads when folderName is provided', async () => {
+      let downloadOptions: chrome.downloads.DownloadOptions | null = null;
+
+      (globalThis as unknown as { chrome: unknown }).chrome = {
+        downloads: {
+          download: vi.fn((options: chrome.downloads.DownloadOptions, cb?: (id: number) => void) => {
+            downloadOptions = options;
+            if (cb) cb(43);
+          }),
+        },
+        runtime: {},
+      };
+
+      const blob = new Blob(['mp3 audio bytes'], { type: 'audio/mp3' });
+      const res = await saveRecordingAuto(blob, 'My-Track.mp3', null, 'Tab Audio Recorder');
+
+      expect(res.success).toBe(true);
+      expect(res.method).toBe('downloads');
+      expect(res.folderName).toBe('Downloads / Tab Audio Recorder');
+      expect(downloadOptions).not.toBeNull();
+      expect((downloadOptions as unknown as { filename: string }).filename).toBe(
+        'Tab Audio Recorder/My-Track.mp3'
+      );
+    });
   });
 });
